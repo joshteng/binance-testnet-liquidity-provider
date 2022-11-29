@@ -62,6 +62,14 @@ class BinanceClient:
             headers=headers
         )
 
+    def _verify_endpoint(self, endpoint):
+        if not endpoint in self.endpoints:
+            raise BinanceMissingEndpointException(f"Endpoint {endpoint} not found")
+
+    def _verify_api_credentials(self, endpoint):
+        if self.endpoints[endpoint]["is_signed"] and (len(self.key) == 0 or len(self.secret) == 0):
+            raise BinanceAPICredentialsException("Missing API key or secret")
+
     def _verify_parameters(self, endpoint, params):
         if not "required_params" in self.endpoints[endpoint]:
             return
@@ -70,14 +78,9 @@ class BinanceClient:
             if not key in params:
                 raise BinanceMissingParameterException(key)
 
-
     def request(self, endpoint, params=None):
-        if not endpoint in self.endpoints:
-            raise BinanceMissingEndpointException(f"Endpoint {endpoint} not found")
-
-        if self.endpoints[endpoint]["is_signed"] and (len(self.key) == 0 or len(self.secret) == 0):
-            raise BinanceAPICredentialsException("Missing API key or secret")
-
+        self._verify_endpoint(endpoint)
+        self._verify_api_credentials(endpoint)
         self._verify_parameters(endpoint, params)
 
         if not params:
