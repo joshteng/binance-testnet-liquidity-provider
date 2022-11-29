@@ -23,6 +23,12 @@ class BinanceClient:
             "is_signed": True,
             "required_params": ["symbol", "side", "type", "timeInForce", "quantity", "price"]
         },
+        "deleteOpenOrders": {
+            "http_method": "DELETE",
+            "path": "/api/v3/openOrders",
+            "is_signed": True,
+            "required_params": ["symbol"]
+        },
     }
 
     def __init__(self, base_url="https://api.binance.com", key="", secret=""):
