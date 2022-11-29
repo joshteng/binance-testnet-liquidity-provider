@@ -3,3 +3,4 @@
 generate_requirements.sh
 *.pyc
 __pycache__
+.env

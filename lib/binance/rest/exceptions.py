@@ -2,6 +2,10 @@ class BinanceMissingEndpointExceptions(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
+class BinanceAPICredentialsException(Exception):
+    def __init__(self, msg):
+        super().__init__(msg)
+
 class BinanceRestExceptions(Exception):
     def __init__(self, reason, status_code, http_method, path, details):
         self.reason=reason

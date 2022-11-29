@@ -1,0 +1,5 @@
+MOCK_RESPONSES = {
+    'getAccount': {'makerCommission': 0, 'takerCommission': 0, 'buyerCommission': 0, 'sellerCommission': 0, 'canTrade': True, 'canWithdraw': False, 'canDeposit': False, 'brokered': False, 'updateTime': 1669727185041, 'accountType': 'SPOT', 'balances': [{'asset': 'BNB', 'free': '1000.00000000', 'locked': '0.00000000'}, {'asset': 'BTC', 'free': '0.00000000', 'locked': '0.00000000'}, {'asset': 'BUSD', 'free': '13297.16534431', 'locked': '13297.16414910'}, {'asset': 'ETH', 'free': '100.00000000', 'locked': '0.00000000'}, {'asset': 'LTC', 'free': '500.00000000', 'locked': '0.00000000'}, {'asset': 'TRX', 'free': '500000.00000000', 'locked': '0.00000000'}, {'asset': 'USDT', 'free': '9962.00000000', 'locked': '38.00000000'}, {'asset': 'XRP', 'free': '50000.00000000', 'locked': '0.00000000'}], 'permissions': ['SPOT']},
+    'getExchangeInfo': {'timezone': 'UTC', 'symbols': [{'symbol': 'BNBBUSD'}]}
+
+}
