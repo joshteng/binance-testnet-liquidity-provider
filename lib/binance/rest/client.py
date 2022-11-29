@@ -78,22 +78,13 @@ class BinanceClient:
             if not key in params:
                 raise BinanceMissingParameterException(key)
 
-    def request(self, endpoint, params=None):
-        self._verify_endpoint(endpoint)
-        self._verify_api_credentials(endpoint)
-        self._verify_parameters(endpoint, params)
-
-        if not params:
-            params = {}
-
-        querystring = ""
-
+    def _prepare_querystring(self, endpoint, params):
         if self.endpoints[endpoint]["is_signed"]:
-            querystring += self._prepare_params(self._sign_request(params))
+            return self._prepare_params(self._sign_request(params))
+        return ""
 
-        res = self._dispatch_request(self.endpoints[endpoint]["http_method"], self.endpoints[endpoint]["path"], querystring)
-
-        if not (res.status_code > 199 and res.status_code < 300):
+    def _check_response(self, endpoint, res):
+        if res.status_code < 200 or res.status_code > 299:
             raise BinanceRestException(
                 reason=res.reason,
                 status_code=res.status_code,
@@ -101,5 +92,22 @@ class BinanceClient:
                 path=self.endpoints[endpoint]["path"],
                 details=res.json()
             )
+
+    def request(self, endpoint, params=None):
+        self._verify_endpoint(endpoint)
+        self._verify_api_credentials(endpoint)
+        self._verify_parameters(endpoint, params)
+
+        params = params if params else {}
+
+        querystring = self._prepare_querystring(endpoint, params)
+
+        res = self._dispatch_request(
+            self.endpoints[endpoint]["http_method"],
+            self.endpoints[endpoint]["path"],
+            querystring
+        )
+
+        self._check_response(endpoint, res)
 
         return res.json()
