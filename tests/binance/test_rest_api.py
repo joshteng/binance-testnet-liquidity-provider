@@ -1,6 +1,6 @@
 import pytest
 from lib.binance.rest.client import BinanceClient
-from lib.binance.rest.exceptions import BinanceAPICredentialsException, BinanceMissingEndpointExceptions, BinanceRestExceptions
+from lib.binance.rest.exceptions import BinanceAPICredentialsException, BinanceMissingEndpointException, BinanceRestException
 from tests.binance.mock_responses import MOCK_RESPONSES
 
 base_url = "https://testnet.binance.vision"
@@ -16,12 +16,12 @@ def test_requests_fail_status_code(requests_mock):
     requests_mock.get(f'{base_url}/api/v3/exchangeInfo', status_code=400, json={'resp': 'bad request'})
 
     client = BinanceClient(base_url=base_url)
-    with pytest.raises(BinanceRestExceptions) as e_info:
+    with pytest.raises(BinanceRestException) as e_info:
         client.request('getExchangeInfo')
 
 def test_missing_endpoint_exception():
     client = BinanceClient(base_url=base_url)
-    with pytest.raises(BinanceMissingEndpointExceptions) as e_info:
+    with pytest.raises(BinanceMissingEndpointException) as e_info:
         client.request('random')
 
 def test_get_account(requests_mock):

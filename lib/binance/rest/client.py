@@ -1,7 +1,7 @@
 import hmac
 import hashlib
 import requests
-from lib.binance.rest.exceptions import BinanceAPICredentialsException, BinanceRestExceptions, BinanceMissingEndpointExceptions
+from lib.binance.rest.exceptions import BinanceAPICredentialsException, BinanceRestException, BinanceMissingEndpointException
 from lib.binance.rest.util import encoded_string, get_timestamp, clean_none_value
 
 
@@ -58,7 +58,7 @@ class BinanceClient:
 
     def request(self, endpoint, params=None):
         if not endpoint in self.endpoints:
-            raise BinanceMissingEndpointExceptions(f"Endpoint {endpoint} not found")
+            raise BinanceMissingEndpointException(f"Endpoint {endpoint} not found")
 
         if self.endpoints[endpoint]["is_signed"] and (len(self.key) == 0 or len(self.secret) == 0):
             raise BinanceAPICredentialsException("Missing API key or secret")
@@ -74,7 +74,7 @@ class BinanceClient:
         res = self._dispatch_request(self.endpoints[endpoint]["http_method"], self.endpoints[endpoint]["path"], querystring)
 
         if not (res.status_code > 199 and res.status_code < 300):
-            raise BinanceRestExceptions(
+            raise BinanceRestException(
                 reason=res.reason,
                 status_code=res.status_code,
                 http_method=self.endpoints[endpoint]["http_method"],
