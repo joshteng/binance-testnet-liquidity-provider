@@ -1,2 +1,5 @@
 .DS_Store
 .tool-versions
+generate_requirements.sh
+*.pyc
+__pycache__
