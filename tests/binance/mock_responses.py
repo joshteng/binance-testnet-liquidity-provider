@@ -1,5 +1,8 @@
 MOCK_RESPONSES = {
     'getAccount': {'makerCommission': 0, 'takerCommission': 0, 'buyerCommission': 0, 'sellerCommission': 0, 'canTrade': True, 'canWithdraw': False, 'canDeposit': False, 'brokered': False, 'updateTime': 1669727185041, 'accountType': 'SPOT', 'balances': [{'asset': 'BNB', 'free': '1000.00000000', 'locked': '0.00000000'}, {'asset': 'BTC', 'free': '0.00000000', 'locked': '0.00000000'}, {'asset': 'BUSD', 'free': '13297.16534431', 'locked': '13297.16414910'}, {'asset': 'ETH', 'free': '100.00000000', 'locked': '0.00000000'}, {'asset': 'LTC', 'free': '500.00000000', 'locked': '0.00000000'}, {'asset': 'TRX', 'free': '500000.00000000', 'locked': '0.00000000'}, {'asset': 'USDT', 'free': '9962.00000000', 'locked': '38.00000000'}, {'asset': 'XRP', 'free': '50000.00000000', 'locked': '0.00000000'}], 'permissions': ['SPOT']},
-    'getExchangeInfo': {'timezone': 'UTC', 'symbols': [{'symbol': 'BNBBUSD'}]}
+
+    'getExchangeInfo': {'timezone': 'UTC', 'symbols': [{'symbol': 'BNBBUSD'}]},
+
+    'postOrder': {'symbol': 'BTCBUSD', 'orderId': 11238605, 'orderListId': -1, 'clientOrderId': 'PL7q3jrRt3kDYxsEnEBmfI', 'transactTime': 1669736174076, 'price': '15000.00000000', 'origQty': '0.10000000', 'executedQty': '0.10000000', 'cummulativeQuoteQty': '1642.76130261', 'status': 'FILLED', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'fills': [{'price': '16427.79000000', 'qty': '0.03956800', 'commission': '0.00000000', 'commissionAsset': 'BUSD', 'tradeId': 3216307}, {'price': '16427.50000000', 'qty': '0.04322100', 'commission': '0.00000000', 'commissionAsset': 'BUSD', 'tradeId': 3216308}, {'price': '16427.49000000', 'qty': '0.01721100', 'commission': '0.00000000', 'commissionAsset': 'BUSD', 'tradeId': 3216309}]}
 
 }

@@ -1,6 +1,7 @@
 import pytest
+import requests_mock as rm
 from lib.binance.rest.client import BinanceClient
-from lib.binance.rest.exceptions import BinanceAPICredentialsException, BinanceMissingEndpointException, BinanceRestException
+from lib.binance.rest.exceptions import *
 from tests.binance.mock_responses import MOCK_RESPONSES
 
 base_url = "https://testnet.binance.vision"
@@ -35,3 +36,30 @@ def test_missing_api_credentials_for_signed_endpoints():
     client = BinanceClient(base_url=base_url)
     with pytest.raises(BinanceAPICredentialsException) as e_info:
         client.request('getAccount')
+
+@rm.Mocker(kw='mock')
+def test_post_order(**kwargs):
+    kwargs['mock'].post(rm.ANY, json=MOCK_RESPONSES['postOrder'])
+
+    client = BinanceClient(base_url=base_url, key="key", secret="secret")
+    resp = client.request('postOrder', {
+        "symbol": "BTCBUSD",
+        "side": "SELL",
+        "type": "LIMIT",
+        "timeInForce": "GTC",
+        "quantity": "0.001",
+        "price": "15000"
+    })
+    assert resp == MOCK_RESPONSES['postOrder']
+
+
+def test_post_order_with_missing_parameters():
+    client = BinanceClient(base_url=base_url, key="key", secret="secret")
+    with pytest.raises(BinanceMissingParameterException) as e_info:
+        client.request('postOrder', {
+            "side": "SELL",
+            "type": "LIMIT",
+            "timeInForce": "GTC",
+            "quantity": "0.001",
+            "price": "15000"
+        })

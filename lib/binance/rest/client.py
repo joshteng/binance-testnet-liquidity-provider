@@ -1,7 +1,7 @@
 import hmac
 import hashlib
 import requests
-from lib.binance.rest.exceptions import BinanceAPICredentialsException, BinanceRestException, BinanceMissingEndpointException
+from lib.binance.rest.exceptions import *
 from lib.binance.rest.util import encoded_string, get_timestamp, clean_none_value
 
 
@@ -16,6 +16,12 @@ class BinanceClient:
             "http_method": "GET",
             "path": "/api/v3/account",
             "is_signed": True
+        },
+        "postOrder": {
+            "http_method": "POST",
+            "path": "/api/v3/order",
+            "is_signed": True,
+            "required_params": ["symbol", "side", "type", "timeInForce", "quantity", "price"]
         },
     }
 
@@ -56,12 +62,23 @@ class BinanceClient:
             headers=headers
         )
 
+    def _verify_parameters(self, endpoint, params):
+        if not "required_params" in self.endpoints[endpoint]:
+            return
+
+        for key in self.endpoints[endpoint]['required_params']:
+            if not key in params:
+                raise BinanceMissingParameterException(key)
+
+
     def request(self, endpoint, params=None):
         if not endpoint in self.endpoints:
             raise BinanceMissingEndpointException(f"Endpoint {endpoint} not found")
 
         if self.endpoints[endpoint]["is_signed"] and (len(self.key) == 0 or len(self.secret) == 0):
             raise BinanceAPICredentialsException("Missing API key or secret")
+
+        self._verify_parameters(endpoint, params)
 
         if not params:
             params = {}

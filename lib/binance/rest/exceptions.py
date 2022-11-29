@@ -2,6 +2,10 @@ class BinanceMissingEndpointException(Exception):
     def __init__(self, msg):
         super().__init__(msg)
 
+class BinanceMissingParameterException(Exception):
+    def __init__(self, parameter):
+        super().__init__(f"Missing '{parameter}' in request")
+
 class BinanceAPICredentialsException(Exception):
     def __init__(self, msg):
         super().__init__(msg)
