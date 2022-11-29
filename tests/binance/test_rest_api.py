@@ -1,6 +1,6 @@
 import pytest
 import requests_mock as rm
-from lib.binance.rest.client import BinanceClient
+from lib.binance import BinanceClient
 from lib.binance.rest.exceptions import *
 from tests.binance.mock_responses import MOCK_RESPONSES
 
