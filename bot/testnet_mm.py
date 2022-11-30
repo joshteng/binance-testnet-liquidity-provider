@@ -33,6 +33,7 @@ class TestnetMM:
         self.distance_from_mid_price = distance_from_mid_price
 
     def run(self):
+        self._cancel_open_orders()
         self.keep_alive = True
         self.bws = self._connect_to_production_trade_stream()
         self._keep_alive()

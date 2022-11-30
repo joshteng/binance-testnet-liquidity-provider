@@ -15,6 +15,24 @@ def test_default_state():
         'asks': []
     }
 
+def test_run():
+    from bot.testnet_mm import TestnetMM
+
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+
+    mm._cancel_open_orders = MagicMock()
+    mm._connect_to_production_trade_stream = MagicMock()
+    mm._keep_alive = MagicMock()
+
+    mm.run()
+
+    assert mm.keep_alive == True
+    assert mm._cancel_open_orders.called
+    assert mm._connect_to_production_trade_stream.called
+    assert mm._keep_alive.called
+
+
+
 def test_trade_without_last_price():
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
