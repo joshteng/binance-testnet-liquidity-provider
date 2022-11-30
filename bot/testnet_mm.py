@@ -164,7 +164,23 @@ class TestnetMM:
         self._place_bid(truncated_order_qty, self._truncate_price(bid_price))
         self._place_ask(truncated_order_qty, self._truncate_price(ask_price))
 
+    def _prevent_multiple_trade_at_once(func):
+        def execute(self):
+            self.in_process = self.in_process if hasattr(self, "in_process") else False
+            if self.in_process:
+                return
 
+            self.in_process = True
+            try:
+                func(self)
+            except Exception as err:
+                raise err
+            finally:
+                self.in_process = False
+
+        return execute
+
+    @_prevent_multiple_trade_at_once
     def _trade(self) -> bool:
         # don't trade if price is not updated
         if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
