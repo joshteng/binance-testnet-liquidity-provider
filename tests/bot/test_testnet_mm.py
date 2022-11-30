@@ -155,7 +155,8 @@ def test_buy_quote_asset():
 
 
 @pytest.fixture
-def reset_state():
+def place_bid_or_ask_setup(requests_mock):
+    from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
     TestnetMMState.PAST_ORDERS = []
     TestnetMMState.OPEN_ORDERS = {
@@ -163,24 +164,26 @@ def reset_state():
         'asks': []
     }
 
-def test_place_bid(requests_mock, reset_state):
-    from bot.testnet_mm import TestnetMM
-    from bot.testnet_mm_state import TestnetMMState
-
     base_url = "https://testnet.binance.vision"
 
     base_asset, quote_asset = 'BTC', 'BUSD'
     symbol = base_asset + quote_asset
     order_qty, order_price = '0.00100000', '1500.00000000'
 
-    mocked = MOCK_RESPONSES['postOrderBuySuccess']
+    mocked = MOCK_RESPONSES['postOrder']
     mocked['symbol'] = symbol
     mocked['price'] = order_price
     mocked['origQty'] = order_qty
 
     requests_mock.post(base_url + '/api/v3/order', json=mocked)
 
-    mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
+    return order_qty, order_price, mocked, TestnetMM(base_asset, quote_asset, 'key', 'secret')
+
+
+def test_place_bid(place_bid_or_ask_setup):
+    from bot.testnet_mm_state import TestnetMMState
+
+    order_qty, order_price, mocked, mm = place_bid_or_ask_setup
 
     mm._place_bid(order_qty, order_price)
 
@@ -201,24 +204,10 @@ def test_place_bid(requests_mock, reset_state):
 
     assert TestnetMMState.OPEN_ORDERS['bids'] == [order_details]
 
-def test_place_ask(requests_mock, reset_state):
-    from bot.testnet_mm import TestnetMM
+def test_place_ask(place_bid_or_ask_setup):
     from bot.testnet_mm_state import TestnetMMState
 
-    base_url = "https://testnet.binance.vision"
-
-    base_asset, quote_asset = 'BTC', 'BUSD'
-    symbol = base_asset + quote_asset
-    order_qty, order_price = '0.00100000', '1500.00000000'
-
-    mocked = MOCK_RESPONSES['postOrderSellSuccess']
-    mocked['symbol'] = symbol
-    mocked['price'] = order_price
-    mocked['origQty'] = order_qty
-
-    requests_mock.post(base_url + '/api/v3/order', json=mocked)
-
-    mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
+    order_qty, order_price, mocked, mm = place_bid_or_ask_setup
 
     mm._place_ask(order_qty, order_price)
 
