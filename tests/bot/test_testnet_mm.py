@@ -31,8 +31,6 @@ def test_run():
     assert mm._connect_to_production_trade_stream.called
     assert mm._keep_alive.called
 
-
-
 def test_trade_without_last_price():
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
