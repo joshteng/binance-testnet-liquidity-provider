@@ -1,2 +1,2 @@
 class TestnetMMState:
-    PRODUCTION_LAST_PRICE = 0
+    PRODUCTION_LAST_PRICE = '0'
