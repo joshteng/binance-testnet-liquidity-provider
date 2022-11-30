@@ -172,7 +172,7 @@ class TestnetMM:
 
             self.in_process = True
             try:
-                func(self)
+                return func(self)
             except Exception as err:
                 raise err
             finally:
