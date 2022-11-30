@@ -29,6 +29,16 @@ class BinanceClient:
             "is_signed": True,
             "required_params": ["symbol"]
         },
+        "postUserDataStream": {
+            "http_method": "POST",
+            "path": "/api/v3/userDataStream",
+            "is_signed": False
+        },
+        "putUserDataStream": {
+            "http_method": "PUT",
+            "path": "/api/v3/userDataStream",
+            "is_signed": False
+        }
     }
 
     def __init__(self, base_url="https://api.binance.com", key="", secret=""):

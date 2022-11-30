@@ -576,3 +576,12 @@ def test_get_asset_filters(requests_mock):
     assert mm.price_precision == {'BNBBUSD': 2, 'BTCBUSD': 2, 'ETHBUSD': 2, 'LTCBUSD': 2, 'TRXBUSD': 5, 'XRPBUSD': 4, 'BNBUSDT': 2, 'BTCUSDT': 2, 'ETHUSDT': 2, 'LTCUSDT': 2, 'TRXUSDT': 5, 'XRPUSDT': 4, 'BNBBTC': 6, 'ETHBTC': 6, 'LTCBTC': 6, 'TRXBTC': 8, 'XRPBTC': 8, 'LTCBNB': 4, 'TRXBNB': 7, 'XRPBNB': 6}
 
     assert mm.min_notional == {'BNBBUSD': '10.00000000', 'BTCBUSD': '10.00000000', 'ETHBUSD': '10.00000000', 'LTCBUSD': '10.00000000', 'TRXBUSD': '10.00000000', 'XRPBUSD': '10.00000000', 'BNBUSDT': '10.00000000', 'BTCUSDT': '10.00000000', 'ETHUSDT': '10.00000000', 'LTCUSDT': '10.00000000', 'TRXUSDT': '10.00000000', 'XRPUSDT': '10.00000000', 'BNBBTC': '0.00010000', 'ETHBTC': '0.00010000', 'LTCBTC': '0.00010000', 'TRXBTC': '0.00010000', 'XRPBTC': '0.00010000', 'LTCBNB': '0.10000000', 'TRXBNB': '0.10000000', 'XRPBNB': '0.10000000'}
+
+def test_get_listen_key(requests_mock):
+    from bot.testnet_mm import TestnetMM
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+
+    requests_mock.post('https://testnet.binance.vision/api/v3/userDataStream', json={'listenKey': 'abc'})
+
+    mm._get_listen_key()
+    assert mm.listen_key == 'abc'

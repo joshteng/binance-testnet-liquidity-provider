@@ -1,6 +1,7 @@
 import math
 from time import sleep
 from decimal import Decimal
+from datetime import datetime
 from lib.binance import BinanceWebsocketClient, BinanceClient
 from lib.binance.rest.exceptions import BinanceRestException
 from bot.testnet_mm_state import TestnetMMState
@@ -254,7 +255,15 @@ class TestnetMM:
         else:
             self._provide_liquidity(base_asset_available=base_asset_qty, quote_asset_available=quote_asset_qty)
 
-    # Price Stream related Methods
+    # Stream related Methods
+    def _get_listen_key(self):
+        res = self.rest_client.request("postUserDataStream")
+        self.listen_key = res["listenKey"]
+
+    def _keep_listen_key_alive(self, listenKey):
+        self.last_keep_listen_key_alive_at = datetime.now()
+        self.rest_client.request("putUserDataStream", { "listenKey": listenKey })
+
     def _connect_to_production_trade_stream(self):
         bws = BinanceWebsocketClient(
             name="production",
