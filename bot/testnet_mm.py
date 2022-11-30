@@ -64,6 +64,25 @@ class TestnetMM:
             "price": price
         })
 
+        if not res['orderId']:
+            raise TestnetMMOrderFailedException
+
+        order_details = {
+            'orderId': res['orderId'],
+            'clientOrderId': res['clientOrderId'],
+            'transactTime': res['transactTime'],
+            'status': res['status'],
+            'symbol': res['symbol'],
+            'side': res['side'],
+            'type': res['type'],
+            'price': res['price'],
+            'origQty': res['origQty'],
+            'executedQty': res['executedQty'],
+        }
+
+        TestnetMMState.PAST_ORDERS.append(order_details)
+        TestnetMMState.OPEN_ORDERS['bids'].append(order_details)
+
     def _place_ask(self, qty:str, price:str):
         res = self.rest_client.request("postOrder", {
             "symbol": self.symbol,
@@ -73,6 +92,26 @@ class TestnetMM:
             "quantity": qty,
             "price": price
         })
+
+        if not res['orderId']:
+            raise TestnetMMOrderFailedException
+
+        order_details = {
+            'orderId': res['orderId'],
+            'clientOrderId': res['clientOrderId'],
+            'transactTime': res['transactTime'],
+            'status': res['status'],
+            'symbol': res['symbol'],
+            'side': res['side'],
+            'type': res['type'],
+            'price': res['price'],
+            'origQty': res['origQty'],
+            'executedQty': res['executedQty'],
+        }
+
+        TestnetMMState.PAST_ORDERS.append(order_details)
+        TestnetMMState.OPEN_ORDERS['asks'].append(order_details)
+
 
     def _truncate_quantity(self, quantity:Decimal) -> str:
         """
@@ -144,6 +183,10 @@ class TestnetMM:
 
     def _message_handler(self, msg):
         if 'e' in msg and msg['e'] == 'aggTrade':
+            """
+            From aggTrade subscription
+            https://binance-docs.github.io/apidocs/spot/en/#aggregate-trade-streams
+            """
             self._record_last_price(msg['p'])
             self._trade()
 

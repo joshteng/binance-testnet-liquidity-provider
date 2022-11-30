@@ -7,4 +7,10 @@ MOCK_RESPONSES = {
 
     'getAccountWithoutQuote': {'makerCommission': 0, 'takerCommission': 0, 'buyerCommission': 0, 'sellerCommission': 0, 'canTrade': True, 'canWithdraw': False, 'canDeposit': False, 'brokered': False, 'updateTime': 1669774823018, 'accountType': 'SPOT', 'balances': [{'asset': 'BNB', 'free': '1000.00000000', 'locked': '0.00000000'}, {'asset': 'BTC', 'free': '0.81056400', 'locked': '0.00000000'}, {'asset': 'BUSD', 'free': '0.00000000', 'locked': '0.00000000'}, {'asset': 'ETH', 'free': '100.00000000', 'locked': '0.00000000'}, {'asset': 'LTC', 'free': '500.00000000', 'locked': '0.00000000'}, {'asset': 'TRX', 'free': '500000.00000000', 'locked': '0.00000000'}, {'asset': 'USDT', 'free': '9962.00000000', 'locked': '38.00000000'}, {'asset': 'XRP', 'free': '50000.00000000', 'locked': '0.00000000'}], 'permissions': ['SPOT']},
 
+    'postOrder': {'symbol': 'BTCBUSD', 'orderId': 11547594, 'orderListId': -1, 'clientOrderId': 'tHqKp0tXgstVzO4xoL0qLT', 'transactTime': 1669812778100, 'price': '15000.00000000', 'origQty': '0.00100000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'fills': []},
+
+    'postOrderBuySuccess': {'symbol': 'BTCBUSD', 'orderId': 11547593, 'orderListId': -1, 'clientOrderId': 'tHqKp0tXgstVzO4xoL0qLT', 'transactTime': 1669812778100, 'price': '15000.00000000', 'origQty': '0.00100000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'BUY', 'fills': []},
+
+    'postOrderSellSuccess': {'symbol': 'BTCBUSD', 'orderId': 11547594, 'orderListId': -1, 'clientOrderId': 'tHqKp0tXgstVzO4xoL0qLT', 'transactTime': 1669812778100, 'price': '15000.00000000', 'origQty': '0.00100000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'fills': []},
+
 }
