@@ -23,6 +23,7 @@ def test_run():
     mm._cancel_open_orders = MagicMock()
     mm._connect_to_production_trade_stream = MagicMock()
     mm._keep_alive = MagicMock()
+    mm._get_asset_filters = MagicMock()
 
     mm.run()
 
@@ -30,6 +31,7 @@ def test_run():
     assert mm._cancel_open_orders.called
     assert mm._connect_to_production_trade_stream.called
     assert mm._keep_alive.called
+    assert mm._get_asset_filters.called
 
 def test_trade_without_last_price():
     from bot.testnet_mm import TestnetMM
@@ -532,3 +534,17 @@ def test_trade_places_orders_when_open_ask_orders_price_reached():
     mm._place_trade = MagicMock()
     mm._trade()
     assert mm._place_trade.called
+
+def test_get_asset_filters(requests_mock):
+    from bot.testnet_mm import TestnetMM
+
+    requests_mock.get('https://testnet.binance.vision/api/v3/exchangeInfo', json=MOCK_RESPONSES['getExchangeInfo'])
+
+    mm = TestnetMM('BTC', 'BUSD')
+    mm._get_asset_filters()
+
+    assert mm.base_asset_precision == {'BNBBUSD': 2, 'BTCBUSD': 6, 'ETHBUSD': 5, 'LTCBUSD': 5, 'TRXBUSD': 1, 'XRPBUSD': 1, 'BNBUSDT': 2, 'BTCUSDT': 6, 'ETHUSDT': 5, 'LTCUSDT': 5, 'TRXUSDT': 1, 'XRPUSDT': 1, 'BNBBTC': 2, 'ETHBTC': 5, 'LTCBTC': 5, 'TRXBTC': 1, 'XRPBTC': 1, 'LTCBNB': 5, 'TRXBNB': 1, 'XRPBNB': 1}
+
+    assert mm.price_precision == {'BNBBUSD': 2, 'BTCBUSD': 2, 'ETHBUSD': 2, 'LTCBUSD': 2, 'TRXBUSD': 5, 'XRPBUSD': 4, 'BNBUSDT': 2, 'BTCUSDT': 2, 'ETHUSDT': 2, 'LTCUSDT': 2, 'TRXUSDT': 5, 'XRPUSDT': 4, 'BNBBTC': 6, 'ETHBTC': 6, 'LTCBTC': 6, 'TRXBTC': 8, 'XRPBTC': 8, 'LTCBNB': 4, 'TRXBNB': 7, 'XRPBNB': 6}
+
+    assert mm.min_notional == {'BNBBUSD': '10.00000000', 'BTCBUSD': '10.00000000', 'ETHBUSD': '10.00000000', 'LTCBUSD': '10.00000000', 'TRXBUSD': '10.00000000', 'XRPBUSD': '10.00000000', 'BNBUSDT': '10.00000000', 'BTCUSDT': '10.00000000', 'ETHUSDT': '10.00000000', 'LTCUSDT': '10.00000000', 'TRXUSDT': '10.00000000', 'XRPUSDT': '10.00000000', 'BNBBTC': '0.00010000', 'ETHBTC': '0.00010000', 'LTCBTC': '0.00010000', 'TRXBTC': '0.00010000', 'XRPBTC': '0.00010000', 'LTCBNB': '0.10000000', 'TRXBNB': '0.10000000', 'XRPBNB': '0.10000000'}

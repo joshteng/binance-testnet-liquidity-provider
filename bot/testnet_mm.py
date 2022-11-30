@@ -31,8 +31,12 @@ class TestnetMM:
         )
         self.production_ws_base_url = production_ws_base_url
         self.distance_from_mid_price = distance_from_mid_price
+        self.base_asset_precision = {}
+        self.price_precision = {}
+        self.min_notional = {}
 
     def run(self):
+        self._get_asset_filters()
         self._cancel_open_orders()
         self.keep_alive = True
         self.bws = self._connect_to_production_trade_stream()
@@ -46,6 +50,20 @@ class TestnetMM:
             sleep(1)
 
         self.bws.disconnect()
+
+    def _get_asset_filters(self):
+        exchange_info = self.rest_client.request("getExchangeInfo")
+
+        for asset in exchange_info["symbols"]:
+            for f in asset['filters']:
+                if f['filterType'] == 'LOT_SIZE':
+                    self.base_asset_precision[asset["symbol"]] = f['stepSize'].find('1') - 1
+
+                if f['filterType'] == 'PRICE_FILTER':
+                    self.price_precision[asset["symbol"]] = f['tickSize'].find('1') - 1
+
+                if f['filterType'] == 'MIN_NOTIONAL':
+                    self.min_notional[asset["symbol"]] = f['minNotional']
 
     def _get_balances(self, base_asset="BTC", quote_asset="BUSD") -> tuple[str, str]:
         res = self.rest_client.request("getAccount")
