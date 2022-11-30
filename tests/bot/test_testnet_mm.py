@@ -98,6 +98,30 @@ def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
     mm._trade()
     assert mm._buy_quote_asset.called
 
+@rm.Mocker(kw='mock')
+def test_trade_with_sufficient_base_asset_and_quote_asset(**kwargs):
+    from unittest.mock import MagicMock
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    kwargs['mock'].get(rm.ANY, json=MOCK_RESPONSES['getAccountWithBalance'])
+
+    base_asset, quote_asset = 'BTC', 'BUSD'
+
+    mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
+    mm._provide_liquidity = MagicMock()
+
+    base_asset_qty, quote_asset_qty = mm._get_balances(base_asset, quote_asset)
+    assert float(quote_asset_qty) > 0
+    assert float(base_asset_qty) > 0
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '1000'
+    mm._trade()
+    mm._provide_liquidity.assert_called_with(
+        base_asset_available=base_asset_qty,
+        quote_asset_available=quote_asset_qty
+    )
+
 def test_truncate_quantity():
     from decimal import Decimal
     from bot.testnet_mm import TestnetMM
@@ -152,6 +176,33 @@ def test_buy_quote_asset():
     bid_quantity = Decimal(base_asset_qty) / Decimal('2')
 
     mm._place_ask.assert_called_with(mm._truncate_quantity(bid_quantity), mm._truncate_price(bid_price))
+
+def test_provide_liquidity():
+    from decimal import Decimal
+    from unittest.mock import MagicMock
+    from bot.testnet_mm_state import TestnetMMState
+    from bot.testnet_mm import TestnetMM
+
+    distance_from_mid_price = '0.01'
+    base_asset_available = '1'
+    quote_asset_available = '10000'
+    TestnetMMState.PRODUCTION_LAST_PRICE = '1000'
+
+    bid_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') - Decimal(distance_from_mid_price))
+    ask_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') + Decimal(distance_from_mid_price))
+
+    max_quantity_to_sell = Decimal(base_asset_available)
+    max_quantity_to_buy = Decimal(quote_asset_available) / bid_price
+    order_qty = min(max_quantity_to_sell, max_quantity_to_buy)
+
+    mm = TestnetMM(distance_from_mid_price=distance_from_mid_price)
+    mm._place_bid = MagicMock()
+    mm._place_ask = MagicMock()
+    mm._provide_liquidity(base_asset_available, quote_asset_available)
+
+    truncated_order_qty = mm._truncate_quantity(order_qty)
+    mm._place_bid.assert_called_with(truncated_order_qty, mm._truncate_price(bid_price))
+    mm._place_ask.assert_called_with(truncated_order_qty, mm._truncate_price(ask_price))
 
 
 @pytest.fixture

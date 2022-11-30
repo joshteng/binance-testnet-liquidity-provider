@@ -149,6 +149,22 @@ class TestnetMM:
         ask_quantity = Decimal(base_asset_available) / Decimal('2')
         self._place_ask(self._truncate_quantity(ask_quantity), self._truncate_price(ask_price))
 
+    def _provide_liquidity(self, base_asset_available, quote_asset_available):
+        bid_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') - Decimal(self.distance_from_mid_price))
+        ask_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') + Decimal(self.distance_from_mid_price))
+
+        """
+        If base-quote asset ratio isn't 50:50, order_qty should be minimum of what is available to sell or buy to have an order size of equal base value
+        """
+        max_quantity_to_sell = Decimal(base_asset_available)
+        max_quantity_to_buy = Decimal(quote_asset_available) / bid_price
+        order_qty = min(max_quantity_to_sell, max_quantity_to_buy)
+
+        truncated_order_qty = self._truncate_quantity(order_qty)
+        self._place_bid(truncated_order_qty, self._truncate_price(bid_price))
+        self._place_ask(truncated_order_qty, self._truncate_price(ask_price))
+
+
     def _trade(self) -> bool:
         # don't trade if price is not updated
         if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
@@ -166,8 +182,7 @@ class TestnetMM:
             self._buy_quote_asset(base_asset_available=base_asset_qty)
 
         else:
-            # TODO: place bid and ask
-            pass
+            self._provide_liquidity(base_asset_available=base_asset_qty, quote_asset_available=quote_asset_qty)
 
 
     # Price Stream related Methods
