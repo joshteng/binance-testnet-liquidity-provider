@@ -152,6 +152,9 @@ class TestnetMM:
         self._place_ask(self._truncate_quantity(ask_quantity), self._truncate_price(ask_price))
 
     def _provide_liquidity(self, base_asset_available, quote_asset_available):
+        """
+        Places 2 limit bid and ask orders of equivalent size in testnet, at prices `distance_from_mid_price` away from the last price on production
+        """
         bid_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') - Decimal(self.distance_from_mid_price))
         ask_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') + Decimal(self.distance_from_mid_price))
 
