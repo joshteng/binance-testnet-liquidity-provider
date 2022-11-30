@@ -444,7 +444,7 @@ def open_orders():
     }
     return TestnetMM('BTC', 'BUSD', 'key', 'secret')
 
-def test_has_open_orders_and_production_price_reached_return_true(open_orders):
+def test_has_open_orders_and_production_price_reached_return_true_when_bid_reached(open_orders):
     from bot.testnet_mm_state import TestnetMMState
 
     TestnetMMState.PRODUCTION_LAST_PRICE = '995'
@@ -453,7 +453,7 @@ def test_has_open_orders_and_production_price_reached_return_true(open_orders):
 
     assert mm._has_open_orders_and_production_price_reached() == True
 
-def test_has_open_orders_and_production_price_reached_return_true(open_orders):
+def test_has_open_orders_and_production_price_reached_return_true_when_ask_reached(open_orders):
     from bot.testnet_mm_state import TestnetMMState
 
     TestnetMMState.PRODUCTION_LAST_PRICE = '1005'
