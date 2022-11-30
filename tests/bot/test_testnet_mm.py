@@ -230,7 +230,7 @@ def test_place_ask(place_bid_or_ask_setup):
 
 
 @pytest.fixture
-def failed_order(requests_mock):
+def bad_order(requests_mock):
     base_url = "https://testnet.binance.vision"
     base_asset, quote_asset = 'BTC', 'BUSD'
     symbol = base_asset + quote_asset
@@ -246,22 +246,22 @@ def failed_order(requests_mock):
 
     return base_asset, quote_asset, quantity, price
 
-def test_place_bid_throws_exception_if_failed(failed_order):
+def test_place_bid_throws_exception_if_failed(bad_order):
     from bot.testnet_mm import TestnetMM
     from bot.exceptions import TestnetMMOrderFailedException
 
-    base_asset, quote_asset, quantity, price = failed_order
+    base_asset, quote_asset, quantity, price = bad_order
 
     mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
 
     with pytest.raises(TestnetMMOrderFailedException):
         mm._place_bid(quantity, price)
 
-def test_place_ask_throws_exception_if_failed(failed_order):
+def test_place_ask_throws_exception_if_failed(bad_order):
     from bot.testnet_mm import TestnetMM
     from bot.exceptions import TestnetMMOrderFailedException
 
-    base_asset, quote_asset, quantity, price = failed_order
+    base_asset, quote_asset, quantity, price = bad_order
 
     mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
 
