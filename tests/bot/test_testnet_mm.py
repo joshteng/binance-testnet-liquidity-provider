@@ -145,30 +145,37 @@ def test_trade_with_sufficient_base_asset_and_quote_asset(**kwargs):
         quote_asset_available=quote_asset_qty
     )
 
-def test_truncate_quantity():
-    from decimal import Decimal
+@pytest.fixture
+def setup_filters(requests_mock):
     from bot.testnet_mm import TestnetMM
-
+    requests_mock.get('https://testnet.binance.vision/api/v3/exchangeInfo', json=MOCK_RESPONSES['getExchangeInfo'])
     mm = TestnetMM()
+    mm._get_asset_filters()
+    return mm
+
+def test_truncate_quantity(setup_filters):
+    from decimal import Decimal
+    mm = setup_filters
     assert mm._truncate_quantity(Decimal('126.395930994')) == '126.395930'
 
-def test_truncate_price():
+def test_truncate_price(setup_filters):
     from decimal import Decimal
-    from bot.testnet_mm import TestnetMM
-
-    mm = TestnetMM()
+    mm = setup_filters
     assert mm._truncate_price(Decimal('126.395930294')) == '126.390000'
 
-def test_buy_base_asset():
+def test_buy_base_asset(requests_mock):
     from decimal import Decimal
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
+
 
     quote_asset_qty = '10000'
     distance_from_mid_price = '0.1'
     TestnetMMState.PRODUCTION_LAST_PRICE = 1000
 
     mm = TestnetMM(distance_from_mid_price=distance_from_mid_price)
+    requests_mock.get('https://testnet.binance.vision/api/v3/exchangeInfo', json=MOCK_RESPONSES['getExchangeInfo'])
+    mm._get_asset_filters()
 
     mm._place_bid = MagicMock()
     mm._buy_base_asset(quote_asset_qty)
@@ -179,7 +186,7 @@ def test_buy_base_asset():
     mm._place_bid.assert_called_with(mm._truncate_quantity(bid_quantity), mm._truncate_price(bid_price))
 
 
-def test_buy_quote_asset():
+def test_buy_quote_asset(requests_mock):
     from decimal import Decimal
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
@@ -189,6 +196,8 @@ def test_buy_quote_asset():
     TestnetMMState.PRODUCTION_LAST_PRICE = 1000
 
     mm = TestnetMM(distance_from_mid_price=distance_from_mid_price)
+    requests_mock.get('https://testnet.binance.vision/api/v3/exchangeInfo', json=MOCK_RESPONSES['getExchangeInfo'])
+    mm._get_asset_filters()
 
     mm._place_ask = MagicMock()
     mm._buy_quote_asset(base_asset_qty)
@@ -198,7 +207,7 @@ def test_buy_quote_asset():
 
     mm._place_ask.assert_called_with(mm._truncate_quantity(bid_quantity), mm._truncate_price(bid_price))
 
-def test_provide_liquidity():
+def test_provide_liquidity(requests_mock):
     from decimal import Decimal
     from bot.testnet_mm_state import TestnetMMState
     from bot.testnet_mm import TestnetMM
@@ -216,6 +225,8 @@ def test_provide_liquidity():
     order_qty = min(max_quantity_to_sell, max_quantity_to_buy)
 
     mm = TestnetMM(distance_from_mid_price=distance_from_mid_price)
+    requests_mock.get('https://testnet.binance.vision/api/v3/exchangeInfo', json=MOCK_RESPONSES['getExchangeInfo'])
+    mm._get_asset_filters()
     mm._place_bid = MagicMock()
     mm._place_ask = MagicMock()
     mm._provide_liquidity(base_asset_available, quote_asset_available)

@@ -136,17 +136,15 @@ class TestnetMM:
     def _truncate_quantity(self, quantity:Decimal) -> str:
         """
         Fix number of decimal places as per Binance filters
-        To do: get filters from binance rather than hard coding
         """
-        factor = 10 ** 6
+        factor = 10 ** self.base_asset_precision[self.symbol]
         return '{:f}'.format(math.floor(quantity * factor) / factor)
 
     def _truncate_price(self, price:Decimal) -> str:
         """
         Fix number of decimal places as per Binance filters
-        To do: get filters from binance rather than hard coding
         """
-        factor = 10 ** 2
+        factor = 10 ** self.price_precision[self.symbol]
         return '{:f}'.format(math.floor(price * factor) / factor)
 
     def _buy_base_asset(self, quote_asset_available:str):
