@@ -2,6 +2,7 @@ import math
 from time import sleep
 from decimal import Decimal
 from lib.binance import BinanceWebsocketClient, BinanceClient
+from lib.binance.rest.exceptions import BinanceRestException
 from bot.testnet_mm_state import TestnetMMState
 from bot.exceptions import *
 
@@ -164,6 +165,20 @@ class TestnetMM:
         self._place_bid(truncated_order_qty, self._truncate_price(bid_price))
         self._place_ask(truncated_order_qty, self._truncate_price(ask_price))
 
+    def _cancel_open_orders(self):
+        try:
+            self.rest_client.request("deleteOpenOrders", {
+                "symbol": self.symbol,
+            })
+            TestnetMMState.clear_open_orders()
+        except BinanceRestException as err:
+            # error -2011 indicates cancel rejected. we shall ignore this since it is possible for us to not have open orders
+            # https://github.com/binance/binance-spot-api-docs/blob/master/errors.md#-2011-cancel_rejected
+            if err.code == -2011 and err.details['msg'] == 'Unknown order sent.':
+                return
+
+            raise err
+
     def _prevent_multiple_trade_at_once(func):
         def execute(self):
             self.in_process = self.in_process if hasattr(self, "in_process") else False
@@ -191,7 +206,9 @@ class TestnetMM:
         if float(base_asset_qty) <= 0 and float(quote_asset_qty) <= 0:
             raise TestnetMMInsufficientFundsException(f"Insufficient {self.base_asset} and {self.quote_asset}")
 
-        elif float(quote_asset_qty) > 0 and float(base_asset_qty) <= 0:
+        self._cancel_open_orders()
+
+        if float(quote_asset_qty) > 0 and float(base_asset_qty) <= 0:
             self._buy_base_asset(quote_asset_available=quote_asset_qty)
 
         elif float(base_asset_qty) > 0 and float(quote_asset_qty) <= 0:

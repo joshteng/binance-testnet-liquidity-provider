@@ -1,5 +1,7 @@
 import pytest
 import requests_mock as rm
+from unittest.mock import MagicMock, patch
+from lib.binance.rest.exceptions import BinanceRestException
 from tests.bot.mock_responses import MOCK_RESPONSES
 
 
@@ -57,7 +59,6 @@ def test_trade_without_funds(**kwargs):
 
 @rm.Mocker(kw='mock')
 def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
-    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
 
@@ -67,6 +68,7 @@ def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
 
     mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
     mm._buy_base_asset = MagicMock()
+    mm._cancel_open_orders = MagicMock()
 
     base_asset_qty, quote_asset_qty = mm._get_balances(base_asset, quote_asset)
     assert float(quote_asset_qty) > 0
@@ -74,12 +76,12 @@ def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
 
     TestnetMMState.PRODUCTION_LAST_PRICE = '1'
     mm._trade()
+    assert mm._cancel_open_orders.called
     assert mm._buy_base_asset.called
 
 
 @rm.Mocker(kw='mock')
 def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
-    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
 
@@ -89,6 +91,7 @@ def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
 
     mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
     mm._buy_quote_asset = MagicMock()
+    mm._cancel_open_orders = MagicMock()
 
     base_asset_qty, quote_asset_qty = mm._get_balances(base_asset, quote_asset)
     assert float(quote_asset_qty) == 0
@@ -96,11 +99,11 @@ def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
 
     TestnetMMState.PRODUCTION_LAST_PRICE = '1'
     mm._trade()
+    assert mm._cancel_open_orders.called
     assert mm._buy_quote_asset.called
 
 @rm.Mocker(kw='mock')
 def test_trade_with_sufficient_base_asset_and_quote_asset(**kwargs):
-    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
 
@@ -110,6 +113,7 @@ def test_trade_with_sufficient_base_asset_and_quote_asset(**kwargs):
 
     mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
     mm._provide_liquidity = MagicMock()
+    mm._cancel_open_orders = MagicMock()
 
     base_asset_qty, quote_asset_qty = mm._get_balances(base_asset, quote_asset)
     assert float(quote_asset_qty) > 0
@@ -117,6 +121,7 @@ def test_trade_with_sufficient_base_asset_and_quote_asset(**kwargs):
 
     TestnetMMState.PRODUCTION_LAST_PRICE = '1000'
     mm._trade()
+    assert mm._cancel_open_orders.called
     mm._provide_liquidity.assert_called_with(
         base_asset_available=base_asset_qty,
         quote_asset_available=quote_asset_qty
@@ -138,7 +143,6 @@ def test_truncate_price():
 
 def test_buy_base_asset():
     from decimal import Decimal
-    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
 
@@ -159,7 +163,6 @@ def test_buy_base_asset():
 
 def test_buy_quote_asset():
     from decimal import Decimal
-    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
 
@@ -179,7 +182,6 @@ def test_buy_quote_asset():
 
 def test_provide_liquidity():
     from decimal import Decimal
-    from unittest.mock import MagicMock
     from bot.testnet_mm_state import TestnetMMState
     from bot.testnet_mm import TestnetMM
 
@@ -318,3 +320,69 @@ def test_place_ask_throws_exception_if_failed(bad_order):
 
     with pytest.raises(TestnetMMOrderFailedException):
         mm._place_ask(quantity, price)
+
+def test_clear_open_order():
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [{'orderId': 'someOrder'}],
+        'asks': [{'orderId': 'someOrder'}]
+    }
+    TestnetMMState.clear_open_orders()
+
+    assert TestnetMMState.OPEN_ORDERS == {
+        'bids': [],
+        'asks': []
+    }
+
+@rm.Mocker(kw='mock')
+def test_cancel_order(**kwargs):
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.clear_open_orders = MagicMock()
+    kwargs['mock'].delete(rm.ANY, json=MOCK_RESPONSES['deleteOpenOrdersSuccess'])
+
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+    mm._cancel_open_orders()
+
+    assert TestnetMMState.clear_open_orders.called
+
+@patch('lib.binance.rest.client.requests')
+def test_cancel_order_handle_exception(mock_requests):
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.reason = 'Bad Request'
+    mock_response.json.return_value = MOCK_RESPONSES['deleteOpenOrdersHandledError']
+
+    TestnetMMState.clear_open_orders = MagicMock()
+    mock_requests.delete.return_value = mock_response
+
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+
+    try:
+        mm._cancel_open_orders()
+    except Exception as exc:
+        assert False, f"'sum_x_y' raised an exception {exc}"
+
+
+@patch('lib.binance.rest.client.requests')
+def test_cancel_order_unhandled_exception(mock_requests):
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.reason = 'Bad Request'
+    mock_response.json.return_value = MOCK_RESPONSES['deleteOpenOrdersUnhandledError']
+
+    TestnetMMState.clear_open_orders = MagicMock()
+    mock_requests.delete.return_value = mock_response
+
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+
+    with pytest.raises(BinanceRestException):
+        mm._cancel_open_orders()

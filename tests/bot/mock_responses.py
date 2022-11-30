@@ -13,4 +13,9 @@ MOCK_RESPONSES = {
 
     'postOrderSellSuccess': {'symbol': 'BTCBUSD', 'orderId': 11547594, 'orderListId': -1, 'clientOrderId': 'tHqKp0tXgstVzO4xoL0qLT', 'transactTime': 1669812778100, 'price': '15000.00000000', 'origQty': '0.00100000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'NEW', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL', 'fills': []},
 
+    'deleteOpenOrdersSuccess': [{'symbol': 'BTCBUSD', 'origClientOrderId': 'DLYAQRrXOLDU4vCMN23o0D', 'orderId': 11574020, 'orderListId': -1, 'clientOrderId': 'Y6ro9Wy8UN8LafUJng8LYi', 'price': '17000.00000000', 'origQty': '0.00100000', 'executedQty': '0.00000000', 'cummulativeQuoteQty': '0.00000000', 'status': 'CANCELED', 'timeInForce': 'GTC', 'type': 'LIMIT', 'side': 'SELL'}],
+
+    'deleteOpenOrdersHandledError': {'code': -2011, 'msg': 'Unknown order sent.'}, # error code 400, reason 'Bad Request'
+
+    'deleteOpenOrdersUnhandledError': {'code': -1000, 'msg': 'Random'},
 }

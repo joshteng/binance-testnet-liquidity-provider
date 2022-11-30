@@ -5,3 +5,10 @@ class TestnetMMState:
         'bids': [],
         'asks': []
     }
+
+    @staticmethod
+    def clear_open_orders():
+        TestnetMMState.OPEN_ORDERS = {
+            'bids': [],
+            'asks': []
+        }
