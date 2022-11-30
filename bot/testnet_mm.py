@@ -22,7 +22,6 @@ class TestnetMM:
     def _keep_alive(self):
         while self.keep_alive:
             sleep(1)
-            print(TestnetMMState.PRODUCTION_LAST_PRICE)
 
         self.bws.disconnect()
 
