@@ -40,6 +40,9 @@ class BinanceWebsocketClient:
         self.wst.daemon = True
         self.wst.start()
 
+    def disconnect(self):
+        self.ws.close()
+
     def _send_command(self, cmd):
         self.ws.send(json.dumps(cmd))
 
@@ -58,7 +61,7 @@ class BinanceWebsocketClient:
 
     def _on_error(self, _, error):
         print(f"{self.name}: Connection error {error}")
-        self.ws.close()
+        self.disconnect()
         if self.close_handler:
             self.close_handler()
 
