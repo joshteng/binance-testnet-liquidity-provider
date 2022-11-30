@@ -1,4 +1,6 @@
+import math
 from time import sleep
+from decimal import Decimal
 from lib.binance import BinanceWebsocketClient, BinanceClient
 from bot.testnet_mm_state import TestnetMMState
 from bot.exceptions import *
@@ -15,7 +17,8 @@ class TestnetMM:
         testnet_api_key="",
         testnet_api_secret="",
         testnet_rest_base_url="https://testnet.binance.vision",
-        production_ws_base_url="wss://stream.binance.com:9443/ws"
+        production_ws_base_url="wss://stream.binance.com:9443/ws",
+        distance_from_mid_price="0.005"
     ):
         self.base_asset = base_asset.upper()
         self.quote_asset = quote_asset.upper()
@@ -26,6 +29,7 @@ class TestnetMM:
             testnet_api_secret
         )
         self.production_ws_base_url = production_ws_base_url
+        self.distance_from_mid_price = distance_from_mid_price
 
     def run(self):
         self.keep_alive = True
@@ -50,6 +54,62 @@ class TestnetMM:
 
         return (balances[base_asset], balances[quote_asset])
 
+    def _place_bid(self, qty:str, price:str):
+        res = self.rest_client.request("postOrder", {
+            "symbol": self.symbol,
+            "side": "BUY",
+            "type": "LIMIT",
+            "timeInForce": "GTC",
+            "quantity": qty,
+            "price": price
+        })
+
+    def _place_ask(self, qty:str, price:str):
+        res = self.rest_client.request("postOrder", {
+            "symbol": self.symbol,
+            "side": "SELL",
+            "type": "LIMIT",
+            "timeInForce": "GTC",
+            "quantity": qty,
+            "price": price
+        })
+
+    def _truncate_quantity(self, quantity:Decimal) -> str:
+        """
+        Fix number of decimal places as per Binance filters
+        To do: get filters from binance rather than hard coding
+        """
+        factor = 10 ** 6
+        return '{:f}'.format(math.floor(quantity * factor) / factor)
+
+    def _truncate_price(self, price:Decimal) -> str:
+        """
+        Fix number of decimal places as per Binance filters
+        To do: get filters from binance rather than hard coding
+        """
+        factor = 10 ** 2
+        return '{:f}'.format(math.floor(price * factor) / factor)
+
+    def _buy_base_asset(self, quote_asset_available:str):
+        """
+        Buy base asset with quote asset
+        Warning: Hardcoded a ratio of 1/2 base and 1/2 quote asset
+        For a symbol like BTCBUSD, BTC is the base asset and BUSD is the quote asset
+        """
+        bid_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') - Decimal(self.distance_from_mid_price))
+        bid_quantity = (Decimal(quote_asset_available) / Decimal('2')) / bid_price
+        self._place_bid(self._truncate_quantity(bid_quantity), self._truncate_price(bid_price))
+
+    def _buy_quote_asset(self, base_asset_available):
+        """
+        Sells base asset for quote asset
+        Warning: Hardcoded a ratio of 1/2 base and 1/2 quote asset
+        For a symbol like BTCBUSD, BTC is the base asset and BUSD is the quote asset
+        """
+        ask_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') + Decimal(self.distance_from_mid_price))
+        ask_quantity = Decimal(base_asset_available) / Decimal('2')
+        self._place_ask(self._truncate_quantity(ask_quantity), self._truncate_price(ask_price))
+
     def _trade(self) -> bool:
         # don't trade if price is not updated
         if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
@@ -59,6 +119,16 @@ class TestnetMM:
 
         if float(base_asset_qty) <= 0 and float(quote_asset_qty) <= 0:
             raise TestnetMMInsufficientFundsException(f"Insufficient {self.base_asset} and {self.quote_asset}")
+
+        elif float(quote_asset_qty) > 0 and float(base_asset_qty) <= 0:
+            self._buy_base_asset(quote_asset_available=quote_asset_qty)
+
+        elif float(base_asset_qty) > 0 and float(quote_asset_qty) <= 0:
+            self._buy_quote_asset(base_asset_available=base_asset_qty)
+
+        else:
+            # TODO: place bid and ask
+            pass
 
 
     # Price Stream related Methods

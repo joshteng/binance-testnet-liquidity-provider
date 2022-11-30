@@ -44,3 +44,20 @@ def test_trade_without_funds(**kwargs):
     with pytest.raises(TestnetMMInsufficientFundsException):
         TestnetMMState.PRODUCTION_LAST_PRICE = '1'
         mm._trade()
+
+
+@rm.Mocker(kw='mock')
+def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
+    pass
+
+@rm.Mocker(kw='mock')
+def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
+    pass
+
+@rm.Mocker(kw='mock')
+def test_truncate_price(**kwargs):
+    pass
+
+@rm.Mocker(kw='mock')
+def test_truncate_quantity(**kwargs):
+    pass
