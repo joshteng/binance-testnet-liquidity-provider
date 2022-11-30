@@ -3,6 +3,16 @@ import requests_mock as rm
 from tests.bot.mock_responses import MOCK_RESPONSES
 
 
+def test_default_state():
+    from bot.testnet_mm_state import TestnetMMState
+
+    assert TestnetMMState.PRODUCTION_LAST_PRICE == '0'
+    assert TestnetMMState.PAST_ORDERS == []
+    assert TestnetMMState.OPEN_ORDERS == {
+        'bids': [],
+        'asks': []
+    }
+
 def test_trade_without_last_price():
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
