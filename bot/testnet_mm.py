@@ -205,6 +205,17 @@ class TestnetMM:
         if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
             return False
 
+        if self._has_no_open_orders() or\
+            self._has_open_orders_and_production_price_reached():
+            self._place_trade()
+
+    def _has_no_open_orders(self):
+        return len(TestnetMMState.OPEN_ORDERS['bids']) == 0 and len(TestnetMMState.OPEN_ORDERS['asks']) == 0
+
+    def _has_open_orders_and_production_price_reached(self):
+        return (len(TestnetMMState.OPEN_ORDERS['bids']) > 0 and float(TestnetMMState.PRODUCTION_LAST_PRICE) <= float(TestnetMMState.OPEN_ORDERS['bids'][0]['price'])) or (len(TestnetMMState.OPEN_ORDERS['asks']) > 0 and float(TestnetMMState.PRODUCTION_LAST_PRICE) >= float(TestnetMMState.OPEN_ORDERS['asks'][0]['price']))
+
+    def _place_trade(self):
         base_asset_qty, quote_asset_qty = self._get_balances(base_asset=self.base_asset, quote_asset=self.quote_asset)
 
         if float(base_asset_qty) <= 0 and float(quote_asset_qty) <= 0:
@@ -220,7 +231,6 @@ class TestnetMM:
 
         else:
             self._provide_liquidity(base_asset_available=base_asset_qty, quote_asset_available=quote_asset_qty)
-
 
     # Price Stream related Methods
     def _connect_to_production_trade_stream(self):

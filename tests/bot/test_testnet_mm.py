@@ -402,3 +402,133 @@ def test_cancel_order_unhandled_exception(mock_requests):
 
     with pytest.raises(BinanceRestException):
         mm._cancel_open_orders()
+
+def test_has_no_open_orders_return_true():
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [],
+        'asks': []
+    }
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+    assert mm._has_no_open_orders() == True
+
+def test_has_no_open_orders_return_false():
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [{
+            'price': '995'
+        }],
+        'asks': [{
+            'price': '1005'
+        }]
+    }
+    mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+    assert mm._has_no_open_orders() == False
+
+@pytest.fixture
+def open_orders():
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [{
+            'price': '995'
+        }],
+        'asks': [{
+            'price': '1005'
+        }]
+    }
+    return TestnetMM('BTC', 'BUSD', 'key', 'secret')
+
+def test_has_open_orders_and_production_price_reached_return_true(open_orders):
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '995'
+
+    mm = open_orders
+
+    assert mm._has_open_orders_and_production_price_reached() == True
+
+def test_has_open_orders_and_production_price_reached_return_true(open_orders):
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '1005'
+
+    mm = open_orders
+
+    assert mm._has_open_orders_and_production_price_reached() == True
+
+def test_has_open_orders_and_production_price_reached_return_true(open_orders):
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '1000'
+
+    mm = open_orders
+    assert mm._has_open_orders_and_production_price_reached() == False
+
+def test_trade_does_not_place_orders_with_existing_open_orders():
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '1000'
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [{
+            'price': '995'
+        }],
+        'asks': [{
+            'price': '1005'
+        }]
+    }
+
+    base_asset, quote_asset = 'BTC', 'BUSD'
+
+    mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
+    mm._place_trade = MagicMock()
+    mm._trade()
+    assert not mm._place_trade.called
+
+def test_trade_places_orders_when_open_bid_orders_price_reached():
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '995'
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [{
+            'price': '995'
+        }],
+        'asks': [{
+            'price': '1005'
+        }]
+    }
+
+    base_asset, quote_asset = 'BTC', 'BUSD'
+
+    mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
+    mm._place_trade = MagicMock()
+    mm._trade()
+    assert mm._place_trade.called
+
+def test_trade_places_orders_when_open_ask_orders_price_reached():
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    TestnetMMState.PRODUCTION_LAST_PRICE = '1005'
+    TestnetMMState.OPEN_ORDERS = {
+        'bids': [{
+            'price': '995'
+        }],
+        'asks': [{
+            'price': '1005'
+        }]
+    }
+
+    base_asset, quote_asset = 'BTC', 'BUSD'
+
+    mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
+    mm._place_trade = MagicMock()
+    mm._trade()
+    assert mm._place_trade.called
