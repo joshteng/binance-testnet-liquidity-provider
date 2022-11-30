@@ -231,18 +231,24 @@ class TestnetMM:
     def _has_open_orders_and_production_price_reached(self):
         return (len(TestnetMMState.OPEN_ORDERS['bids']) > 0 and float(TestnetMMState.PRODUCTION_LAST_PRICE) <= float(TestnetMMState.OPEN_ORDERS['bids'][0]['price'])) or (len(TestnetMMState.OPEN_ORDERS['asks']) > 0 and float(TestnetMMState.PRODUCTION_LAST_PRICE) >= float(TestnetMMState.OPEN_ORDERS['asks'][0]['price']))
 
+    def _has_sufficient_base_asset(self, base_asset_qty):
+        return float(Decimal(base_asset_qty) * Decimal(TestnetMMState.PRODUCTION_LAST_PRICE)) > float(self.min_notional[self.symbol])
+
+    def _has_sufficient_quote_asset(self, quote_asset_qty):
+        return float(quote_asset_qty) > float(self.min_notional[self.symbol])
+
     def _place_trade(self):
         base_asset_qty, quote_asset_qty = self._get_balances(base_asset=self.base_asset, quote_asset=self.quote_asset)
 
-        if float(base_asset_qty) <= 0 and float(quote_asset_qty) <= 0:
+        if not self._has_sufficient_base_asset(base_asset_qty) and not self._has_sufficient_quote_asset(quote_asset_qty):
             raise TestnetMMInsufficientFundsException(f"Insufficient {self.base_asset} and {self.quote_asset}")
 
         self._cancel_open_orders()
 
-        if float(quote_asset_qty) > 0 and float(base_asset_qty) <= 0:
+        if self._has_sufficient_quote_asset(quote_asset_qty) and not self._has_sufficient_base_asset(base_asset_qty):
             self._buy_base_asset(quote_asset_available=quote_asset_qty)
 
-        elif float(base_asset_qty) > 0 and float(quote_asset_qty) <= 0:
+        elif self._has_sufficient_base_asset(base_asset_qty) and not self._has_sufficient_quote_asset(quote_asset_qty):
             self._buy_quote_asset(base_asset_available=base_asset_qty)
 
         else:
