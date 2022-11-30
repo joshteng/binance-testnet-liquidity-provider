@@ -16,6 +16,7 @@ def test_default_state():
     }
 
 def test_run():
+    import datetime
     from bot.testnet_mm import TestnetMM
 
     mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
@@ -24,14 +25,18 @@ def test_run():
     mm._connect_to_production_trade_stream = MagicMock()
     mm._keep_alive = MagicMock()
     mm._get_asset_filters = MagicMock()
+    mm._connect_to_testnet_user_stream = MagicMock()
 
     mm.run()
 
+    assert hasattr(mm, 'last_keep_listen_key_alive_at')
+    assert type(mm.last_keep_listen_key_alive_at) == datetime.datetime
     assert mm.keep_alive == True
     assert mm._cancel_open_orders.called
     assert mm._connect_to_production_trade_stream.called
     assert mm._keep_alive.called
     assert mm._get_asset_filters.called
+    assert mm._connect_to_testnet_user_stream.called
 
 def test_trade_without_last_price():
     from bot.testnet_mm import TestnetMM

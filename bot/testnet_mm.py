@@ -19,6 +19,7 @@ class TestnetMM:
         testnet_api_key="",
         testnet_api_secret="",
         testnet_rest_base_url="https://testnet.binance.vision",
+        testnet_ws_base_url="wss://testnet.binance.vision/ws",
         production_ws_base_url="wss://stream.binance.com:9443/ws",
         distance_from_mid_price="0.005"
     ):
@@ -30,6 +31,7 @@ class TestnetMM:
             testnet_api_key,
             testnet_api_secret
         )
+        self.testnet_ws_base_url = testnet_ws_base_url
         self.production_ws_base_url = production_ws_base_url
         self.distance_from_mid_price = distance_from_mid_price
         self.base_asset_precision = {}
@@ -41,6 +43,8 @@ class TestnetMM:
         self._cancel_open_orders()
         self.keep_alive = True
         self.bws = self._connect_to_production_trade_stream()
+        self.last_keep_listen_key_alive_at = datetime.now()
+        self.uws = self._connect_to_testnet_user_stream()
         self._keep_alive()
 
     def terminate(self):
@@ -48,9 +52,13 @@ class TestnetMM:
 
     def _keep_alive(self):
         while self.keep_alive:
+            if (datetime.now() - self.last_keep_listen_key_alive_at).seconds > 60 * 50:
+                self._keep_listen_key_alive()
+
             sleep(1)
 
         self.bws.disconnect()
+        self.uws.disconnect()
 
     def _get_asset_filters(self):
         exchange_info = self.rest_client.request("getExchangeInfo")
@@ -264,6 +272,18 @@ class TestnetMM:
         self.last_keep_listen_key_alive_at = datetime.now()
         self.rest_client.request("putUserDataStream", { "listenKey": listenKey })
 
+    def _connect_to_testnet_user_stream(self):
+        self._get_listen_key()
+
+        bws = BinanceWebsocketClient(
+            name="testnet",
+            ws_base_url=f"{self.testnet_ws_base_url}/{self.listen_key}",
+            topics=[],
+            message_handler=self._message_handler,
+            close_handler=self._connect_to_testnet_user_stream)
+        bws.connect()
+        return bws
+
     def _connect_to_production_trade_stream(self):
         bws = BinanceWebsocketClient(
             name="production",
@@ -282,6 +302,8 @@ class TestnetMM:
             """
             self._record_last_price(msg['p'])
             self._trade()
+        elif 'e' in msg and msg['e'] == 'executionReport':
+            TestnetMMState.update_order_state(msg)
 
     def _close_handler(self):
         print("Handling close WS conn")
