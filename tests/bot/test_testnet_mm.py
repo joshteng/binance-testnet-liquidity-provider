@@ -47,9 +47,9 @@ def test_trade_without_funds(**kwargs):
 
 @rm.Mocker(kw='mock')
 def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
+    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
-    from unittest.mock import MagicMock
 
     kwargs['mock'].get(rm.ANY, json=MOCK_RESPONSES['getAccountWithoutBase'])
 
@@ -69,9 +69,9 @@ def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
 
 @rm.Mocker(kw='mock')
 def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
+    from unittest.mock import MagicMock
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
-    from unittest.mock import MagicMock
 
     kwargs['mock'].get(rm.ANY, json=MOCK_RESPONSES['getAccountWithoutQuote'])
 
@@ -88,19 +88,59 @@ def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
     mm._trade()
     assert mm._buy_quote_asset.called
 
-@rm.Mocker(kw='mock')
-def test_truncate_price(**kwargs):
-    pass
+def test_truncate_quantity():
+    from decimal import Decimal
+    from bot.testnet_mm import TestnetMM
 
-@rm.Mocker(kw='mock')
-def test_truncate_quantity(**kwargs):
-    pass
+    mm = TestnetMM()
+    assert mm._truncate_quantity(Decimal('126.395930994')) == '126.395930'
 
-@rm.Mocker(kw='mock')
-def test_buy_quote_asset(**kwargs):
-    pass
+def test_truncate_price():
+    from decimal import Decimal
+    from bot.testnet_mm import TestnetMM
 
-@rm.Mocker(kw='mock')
-def test_buy_base_asset(**kwargs):
-    pass
+    mm = TestnetMM()
+    assert mm._truncate_price(Decimal('126.395930294')) == '126.390000'
+
+def test_buy_base_asset():
+    from decimal import Decimal
+    from unittest.mock import MagicMock
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    quote_asset_qty = '10000'
+    distance_from_mid_price = '0.1'
+    TestnetMMState.PRODUCTION_LAST_PRICE = 1000
+
+    mm = TestnetMM(distance_from_mid_price=distance_from_mid_price)
+
+    mm._place_bid = MagicMock()
+    mm._buy_base_asset(quote_asset_qty)
+
+    bid_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') - Decimal(distance_from_mid_price))
+    bid_quantity = Decimal(quote_asset_qty) / Decimal('2') / bid_price
+
+    mm._place_bid.assert_called_with(mm._truncate_quantity(bid_quantity), mm._truncate_price(bid_price))
+
+
+def test_buy_quote_asset():
+    from decimal import Decimal
+    from unittest.mock import MagicMock
+    from bot.testnet_mm import TestnetMM
+    from bot.testnet_mm_state import TestnetMMState
+
+    base_asset_qty = '2.78'
+    distance_from_mid_price = '0.1'
+    TestnetMMState.PRODUCTION_LAST_PRICE = 1000
+
+    mm = TestnetMM(distance_from_mid_price=distance_from_mid_price)
+
+    mm._place_ask = MagicMock()
+    mm._buy_quote_asset(base_asset_qty)
+
+    bid_price = Decimal(TestnetMMState.PRODUCTION_LAST_PRICE) * (Decimal('1') + Decimal(distance_from_mid_price))
+    bid_quantity = Decimal(base_asset_qty) / Decimal('2')
+
+    mm._place_ask.assert_called_with(mm._truncate_quantity(bid_quantity), mm._truncate_price(bid_price))
+
 
