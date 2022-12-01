@@ -1,4 +1,5 @@
 # A Sample Market Making Bot for Binance Spot (TESTNET)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/joshteng/binance-testnet-liquidity-provider/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/joshteng/binance-testnet-liquidity-provider/tree/main)
 
 This is an example of providing liquidity programmatically on Binance (Spot). It's the most basic form of market making, placing 1 limit order on each side of the order book - learn more about market making: https://www.youtube.com/watch?v=QqK6H1JPjv0
 
