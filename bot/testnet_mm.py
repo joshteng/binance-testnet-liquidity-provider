@@ -43,6 +43,13 @@ class TestnetMM:
         logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
 
     def run(self):
+        """
+        Entry point for bot to begin executing.
+        First, we retrieve filters for order precision
+        Next, we cancel any open orders to not interfere with our bot
+        Then, we subscribe to price socket stream and user stream
+        Finally, we keep the program running forever until stopped
+        """
         self._get_asset_filters()
         self._cancel_open_orders()
         self.keep_alive = True
@@ -88,6 +95,14 @@ class TestnetMM:
 
         return (balances[base_asset], balances[quote_asset])
 
+    def _keep_track_of_orders(self, order_details):
+        side = 'bids' if order_details['side'] == 'BUY' else 'asks'
+        TestnetMMState.PAST_ORDERS.append(order_details)
+        TestnetMMState.OPEN_ORDERS[side].append(order_details)
+        logger.update('past_orders', order_details)
+        logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
+        logger.update('info', f"Placed bid order for {order_details['symbol']} {order_details['origQty']} at {order_details['price']}")
+
     def _place_bid(self, qty: str, price: str):
         res = self.rest_client.request("postOrder", {
             "symbol": self.symbol,
@@ -114,11 +129,7 @@ class TestnetMM:
             'executedQty': res['executedQty'],
         }
 
-        TestnetMMState.PAST_ORDERS.append(order_details)
-        TestnetMMState.OPEN_ORDERS['bids'].append(order_details)
-        logger.update('past_orders', res)
-        logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
-        logger.update('info', f"Placed bid order for {res['symbol']} {res['origQty']} at {res['price']}")
+        self._keep_track_of_orders(order_details)
 
     def _place_ask(self, qty: str, price: str):
         res = self.rest_client.request("postOrder", {
@@ -146,11 +157,8 @@ class TestnetMM:
             'executedQty': res['executedQty'],
         }
 
-        TestnetMMState.PAST_ORDERS.append(order_details)
-        TestnetMMState.OPEN_ORDERS['asks'].append(order_details)
-        logger.update('past_orders', res)
-        logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
-        logger.update('info', f"Placed ask order for {res['symbol']} {res['origQty']} at {res['price']}")
+        self._keep_track_of_orders(order_details)
+
 
     def _truncate_quantity(self, quantity: Decimal) -> str:
         """
