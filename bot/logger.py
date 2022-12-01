@@ -13,16 +13,13 @@ class BotLogger(object):
             'open_orders': [],
             'production_last_price': 0
         }
+        self.number_of_log_history_to_keep = 10
+        self.seconds_between_log_refresh = 1
         self.last_refreshed = datetime.now()
 
     def _create_logger(self, log_file,  log_level):
-        log_format = "%(asctime)s | %(levelname)s | %(message)s"
-
         self.logger = logging.getLogger(log_file)
         ch = logging.StreamHandler(sys.stdout)
-        # formatter = logging.Formatter(
-        #     "%(asctime)s - %(name)s - %(message)s", "%m-%d %H:%M:%S")
-        # ch.setFormatter(formatter)
         self.logger.addHandler(ch)
 
         if log_level == "INFO":
@@ -50,7 +47,7 @@ class BotLogger(object):
         self.logger.info('')
 
         self.logger.info('-' * 50)
-        self.logger.info('SESSION LOG MESSAGES')
+        self.logger.info(f'LAST {self.number_of_log_history_to_keep} LOG MESSAGES')
         for msg in self.log_history['info']:
             self.logger.info(msg)
 
@@ -60,7 +57,7 @@ class BotLogger(object):
 
 
         self.logger.info('-' * 50)
-        self.logger.info('SESSION PAST ORDERS')
+        self.logger.info(f'LAST {self.number_of_log_history_to_keep} PAST ORDERS')
         for order in self.log_history['past_orders']:
             self.logger.info(order)
 
@@ -73,12 +70,12 @@ class BotLogger(object):
             self.log_history['open_orders'] = msg
         elif type == 'info' or type == 'debug':
             self.log_history[type].append(f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')} - {msg}")
-            self.log_history[type] = self.log_history[type][-10:]
+            self.log_history[type] = self.log_history[type][-self.number_of_log_history_to_keep:]
         else:
             self.log_history[type].append(msg)
-            self.log_history[type] = self.log_history[type][-10:]
+            self.log_history[type] = self.log_history[type][-self.number_of_log_history_to_keep:]
 
-        if (datetime.now() - self.last_refreshed).seconds > 1:
+        if (datetime.now() - self.last_refreshed).seconds > self.seconds_between_log_refresh:
             self.construct_output()
 
 logger = BotLogger('TestnetMM', "INFO")
