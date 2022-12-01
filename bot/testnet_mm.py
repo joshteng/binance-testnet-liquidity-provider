@@ -59,6 +59,10 @@ class TestnetMM:
         self._keep_alive()
 
     def terminate(self):
+        """
+        Called when unexpected exceptions happen,
+        Cancels remaining open orders before process ends
+        """
         self._cancel_open_orders()
         self.keep_alive = False
 
@@ -71,6 +75,9 @@ class TestnetMM:
 
         self.bws.disconnect()
         self.uws.disconnect()
+
+    def _timeout(self, seconds):
+        sleep(seconds)
 
     def _get_asset_filters(self):
         exchange_info = self.rest_client.request("getExchangeInfo")
@@ -95,13 +102,45 @@ class TestnetMM:
 
         return (balances[base_asset], balances[quote_asset])
 
-    def _keep_track_of_orders(self, order_details):
+    def _track_orders(self, order_details):
         side = 'bids' if order_details['side'] == 'BUY' else 'asks'
         TestnetMMState.PAST_ORDERS.append(order_details)
         TestnetMMState.OPEN_ORDERS[side].append(order_details)
         logger.update('past_orders', order_details)
         logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
         logger.update('info', f"Placed bid order for {order_details['symbol']} {order_details['origQty']} at {order_details['price']}")
+
+    def _truncate_quantity(self, quantity: Decimal) -> str:
+        """
+        Fix number of decimal places as per Binance filters
+        """
+        factor = 10 ** self.base_asset_precision[self.symbol]
+        return '{:f}'.format(math.floor(quantity * factor) / factor)
+
+    def _truncate_price(self, price: Decimal) -> str:
+        """
+        Fix number of decimal places as per Binance filters
+        """
+        factor = 10 ** self.price_precision[self.symbol]
+        return '{:f}'.format(math.floor(price * factor) / factor)
+
+    def _cancel_open_orders(self):
+        try:
+            self.rest_client.request("deleteOpenOrders", {
+                "symbol": self.symbol,
+            })
+            TestnetMMState.clear_open_orders()
+            logger.update('info', "Cancelled open orders")
+            # add a small timeout for new balance to be reflected
+            self._timeout(1)
+
+        except BinanceRestException as err:
+            # error -2011 indicates cancel rejected. we shall ignore this since it is possible for us to not have open orders
+            # https://github.com/binance/binance-spot-api-docs/blob/master/errors.md#-2011-cancel_rejected
+            if err.code == -2011 and err.details['msg'] == 'Unknown order sent.':
+                return
+
+            raise err
 
     def _place_bid(self, qty: str, price: str):
         res = self.rest_client.request("postOrder", {
@@ -129,7 +168,7 @@ class TestnetMM:
             'executedQty': res['executedQty'],
         }
 
-        self._keep_track_of_orders(order_details)
+        self._track_orders(order_details)
 
     def _place_ask(self, qty: str, price: str):
         res = self.rest_client.request("postOrder", {
@@ -157,22 +196,7 @@ class TestnetMM:
             'executedQty': res['executedQty'],
         }
 
-        self._keep_track_of_orders(order_details)
-
-
-    def _truncate_quantity(self, quantity: Decimal) -> str:
-        """
-        Fix number of decimal places as per Binance filters
-        """
-        factor = 10 ** self.base_asset_precision[self.symbol]
-        return '{:f}'.format(math.floor(quantity * factor) / factor)
-
-    def _truncate_price(self, price: Decimal) -> str:
-        """
-        Fix number of decimal places as per Binance filters
-        """
-        factor = 10 ** self.price_precision[self.symbol]
-        return '{:f}'.format(math.floor(price * factor) / factor)
+        self._track_orders(order_details)
 
     def _buy_base_asset(self, quote_asset_available: str):
         """
@@ -212,62 +236,6 @@ class TestnetMM:
         self._place_bid(truncated_order_qty, self._truncate_price(bid_price))
         self._place_ask(truncated_order_qty, self._truncate_price(ask_price))
 
-    def _cancel_open_orders(self):
-        try:
-            self.rest_client.request("deleteOpenOrders", {
-                "symbol": self.symbol,
-            })
-            TestnetMMState.clear_open_orders()
-            logger.update('info', "Cancelled open orders")
-            # add a small timeout for new balance to be reflected
-            self._timeout(1)
-
-        except BinanceRestException as err:
-            # error -2011 indicates cancel rejected. we shall ignore this since it is possible for us to not have open orders
-            # https://github.com/binance/binance-spot-api-docs/blob/master/errors.md#-2011-cancel_rejected
-            if err.code == -2011 and err.details['msg'] == 'Unknown order sent.':
-                return
-
-            raise err
-
-    def _terminate_if_error(func):
-        def execute(self):
-            try:
-                return func(self)
-            except Exception as err:
-                self.terminate()
-                logger.update('debug', traceback.format_exc())
-                raise err
-
-        return execute
-
-    def _prevent_multiple_trade_at_once(func):
-        def execute(self):
-            self.in_process = self.in_process if hasattr(self, "in_process") else False
-            if self.in_process:
-                return
-
-            self.in_process = True
-            try:
-                return func(self)
-            except Exception as err:
-                raise err
-            finally:
-                self.in_process = False
-
-        return execute
-
-    @_terminate_if_error
-    @_prevent_multiple_trade_at_once
-    def _trade(self) -> bool:
-        # don't trade if price is not updated
-        if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
-            return False
-
-        if self._has_no_open_orders() or \
-           self._has_open_orders_and_production_price_reached():
-            self._place_trade()
-
     def _has_no_open_orders(self):
         return len(TestnetMMState.OPEN_ORDERS['bids']) == 0 and len(TestnetMMState.OPEN_ORDERS['asks']) == 0
 
@@ -279,9 +247,6 @@ class TestnetMM:
 
     def _has_sufficient_quote_asset(self, quote_asset_qty):
         return float(quote_asset_qty) > float(self.min_notional[self.symbol])
-
-    def _timeout(self, seconds):
-        sleep(seconds)
 
     def _place_trade(self):
         self._cancel_open_orders()
@@ -301,6 +266,44 @@ class TestnetMM:
 
         else:
             self._provide_liquidity(base_asset_available=base_asset_qty, quote_asset_available=quote_asset_qty)
+
+    def _terminate_if_error(func):
+        def execute(self):
+            try:
+                return func(self)
+            except Exception as err:
+                self.terminate()
+                logger.update('debug', traceback.format_exc())
+                raise err
+
+        return execute
+
+    def _prevent_multiple_trades_at_once(func):
+        def execute(self):
+            self.in_process = self.in_process if hasattr(self, "in_process") else False
+            if self.in_process:
+                return
+
+            self.in_process = True
+            try:
+                return func(self)
+            except Exception as err:
+                raise err
+            finally:
+                self.in_process = False
+
+        return execute
+
+    @_terminate_if_error
+    @_prevent_multiple_trades_at_once
+    def _trade(self) -> bool:
+        # don't trade if price is not updated
+        if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
+            return False
+
+        if self._has_no_open_orders() or \
+           self._has_open_orders_and_production_price_reached():
+            self._place_trade()
 
     # Stream related Methods
     def _get_listen_key(self):
@@ -350,4 +353,4 @@ class TestnetMM:
 
     def _close_handler(self):
         self.terminate()
-        logger.info("Handling close WS conn")
+        logger.update("info", "WS Connection closed")
