@@ -6,6 +6,8 @@ from lib.binance import BinanceWebsocketClient, BinanceClient
 from lib.binance.rest.exceptions import BinanceRestException
 from bot.testnet_mm_state import TestnetMMState
 from bot.exceptions import *
+from bot.logger import logger
+
 
 class TestnetMM:
     @staticmethod
@@ -21,7 +23,7 @@ class TestnetMM:
         testnet_rest_base_url="https://testnet.binance.vision",
         testnet_ws_base_url="wss://testnet.binance.vision/ws",
         production_ws_base_url="wss://stream.binance.com:9443/ws",
-        distance_from_mid_price="0.005"
+        distance_from_mid_price="0.0003"
     ):
         self.base_asset = base_asset.upper()
         self.quote_asset = quote_asset.upper()
@@ -37,6 +39,7 @@ class TestnetMM:
         self.base_asset_precision = {}
         self.price_precision = {}
         self.min_notional = {}
+        logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
 
     def run(self):
         self._get_asset_filters()
@@ -111,6 +114,9 @@ class TestnetMM:
 
         TestnetMMState.PAST_ORDERS.append(order_details)
         TestnetMMState.OPEN_ORDERS['bids'].append(order_details)
+        logger.update('past_orders', res)
+        logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
+        logger.update('info', f"Placed bid order for {res['symbol']} {res['origQty']} at {res['price']}")
 
     def _place_ask(self, qty:str, price:str):
         res = self.rest_client.request("postOrder", {
@@ -140,7 +146,9 @@ class TestnetMM:
 
         TestnetMMState.PAST_ORDERS.append(order_details)
         TestnetMMState.OPEN_ORDERS['asks'].append(order_details)
-
+        logger.update('past_orders', res)
+        logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
+        logger.update('info', f"Placed ask order for {res['symbol']} {res['origQty']} at {res['price']}")
 
     def _truncate_quantity(self, quantity:Decimal) -> str:
         """
@@ -200,6 +208,8 @@ class TestnetMM:
                 "symbol": self.symbol,
             })
             TestnetMMState.clear_open_orders()
+            logger.update('info', "Cancelled open orders")
+
         except BinanceRestException as err:
             # error -2011 indicates cancel rejected. we shall ignore this since it is possible for us to not have open orders
             # https://github.com/binance/binance-spot-api-docs/blob/master/errors.md#-2011-cancel_rejected
@@ -255,9 +265,11 @@ class TestnetMM:
         self._cancel_open_orders()
 
         if self._has_sufficient_quote_asset(quote_asset_qty) and not self._has_sufficient_base_asset(base_asset_qty):
+            logger.update('info', 'No base asset, buying base asset')
             self._buy_base_asset(quote_asset_available=quote_asset_qty)
 
         elif self._has_sufficient_base_asset(base_asset_qty) and not self._has_sufficient_quote_asset(quote_asset_qty):
+            logger.update('info', 'No quote asset, selling base asset')
             self._buy_quote_asset(base_asset_available=base_asset_qty)
 
         else:
@@ -268,9 +280,9 @@ class TestnetMM:
         res = self.rest_client.request("postUserDataStream")
         self.listen_key = res["listenKey"]
 
-    def _keep_listen_key_alive(self, listenKey):
+    def _keep_listen_key_alive(self):
         self.last_keep_listen_key_alive_at = datetime.now()
-        self.rest_client.request("putUserDataStream", { "listenKey": listenKey })
+        self.rest_client.request("putUserDataStream", { "listenKey": self.listen_key })
 
     def _connect_to_testnet_user_stream(self):
         self._get_listen_key()
@@ -301,9 +313,13 @@ class TestnetMM:
             https://binance-docs.github.io/apidocs/spot/en/#aggregate-trade-streams
             """
             self._record_last_price(msg['p'])
+            logger.update('production_last_price', msg['p'])
             self._trade()
         elif 'e' in msg and msg['e'] == 'executionReport':
+            logger.update('debug', msg)
             TestnetMMState.update_order_state(msg)
+        else:
+            logger.update('debug', f"Unhandled ws message: {msg}")
 
     def _close_handler(self):
         print("Handling close WS conn")
