@@ -271,12 +271,12 @@ class TestnetMM:
         return float(quote_asset_qty) > float(self.min_notional[self.symbol])
 
     def _place_trade(self):
+        self._cancel_open_orders()
+
         base_asset_qty, quote_asset_qty = self._get_balances(base_asset=self.base_asset, quote_asset=self.quote_asset)
 
         if not self._has_sufficient_base_asset(base_asset_qty) and not self._has_sufficient_quote_asset(quote_asset_qty):
             raise TestnetMMInsufficientFundsException(f"Insufficient {self.base_asset} and {self.quote_asset}")
-
-        self._cancel_open_orders()
 
         if self._has_sufficient_quote_asset(quote_asset_qty) and not self._has_sufficient_base_asset(base_asset_qty):
             logger.update('info', 'No base asset, buying base asset')
