@@ -393,6 +393,7 @@ def test_cancel_order(**kwargs):
     kwargs['mock'].delete(rm.ANY, json=MOCK_RESPONSES['deleteOpenOrdersSuccess'])
 
     mm = TestnetMM('BTC', 'BUSD', 'key', 'secret')
+    mm._timeout = MagicMock()
     mm._cancel_open_orders()
 
     assert TestnetMMState.clear_open_orders.called

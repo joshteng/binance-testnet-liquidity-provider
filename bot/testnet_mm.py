@@ -211,6 +211,8 @@ class TestnetMM:
             })
             TestnetMMState.clear_open_orders()
             logger.update('info', "Cancelled open orders")
+            # add a small timeout for new balance to be reflected
+            self._timeout(1)
 
         except BinanceRestException as err:
             # error -2011 indicates cancel rejected. we shall ignore this since it is possible for us to not have open orders
@@ -269,6 +271,9 @@ class TestnetMM:
 
     def _has_sufficient_quote_asset(self, quote_asset_qty):
         return float(quote_asset_qty) > float(self.min_notional[self.symbol])
+
+    def _timeout(self, seconds):
+        sleep(seconds)
 
     def _place_trade(self):
         self._cancel_open_orders()
