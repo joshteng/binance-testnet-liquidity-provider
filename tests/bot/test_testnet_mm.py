@@ -77,6 +77,7 @@ def test_trade_without_funds(**kwargs):
     kwargs['mock'].get(rm.ANY, json=MOCK_RESPONSES['getAccountWithoutBalance'])
     assert mm._get_balances(base_asset, quote_asset) == ('0.00000000', '0.00000000')
 
+    mm._cancel_open_orders = MagicMock()
     with pytest.raises(TestnetMMInsufficientFundsException):
         TestnetMMState.PRODUCTION_LAST_PRICE = '1'
         mm._trade()
@@ -85,7 +86,6 @@ def test_trade_without_funds(**kwargs):
 def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
     from bot.testnet_mm import TestnetMM
     from bot.testnet_mm_state import TestnetMMState
-
     base_asset, quote_asset = 'BTC', 'BUSD'
 
     mm = TestnetMM(base_asset, quote_asset, 'key', 'secret')
@@ -93,7 +93,6 @@ def test_trade_with_quote_asset_and_no_base_asset(**kwargs):
     mm._get_asset_filters()
     mm._buy_base_asset = MagicMock()
     mm._cancel_open_orders = MagicMock()
-
     # min notional is 10, so any value below or equal to 10 (accounting for fees) is insufficient
     price = 10000
     btc_balance = 10 / price
@@ -124,7 +123,6 @@ def test_trade_with_base_asset_and_no_quote_asset(**kwargs):
     mm._get_asset_filters()
     mm._buy_quote_asset = MagicMock()
     mm._cancel_open_orders = MagicMock()
-
     # min notional is 10, so any value below or equal to 10 (accounting for fees) is insufficient
     busd_balance = 10
 

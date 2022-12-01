@@ -1,4 +1,5 @@
 import math
+import traceback
 from time import sleep
 from decimal import Decimal
 from datetime import datetime
@@ -51,6 +52,7 @@ class TestnetMM:
         self._keep_alive()
 
     def terminate(self):
+        self._cancel_open_orders()
         self.keep_alive = False
 
     def _keep_alive(self):
@@ -218,6 +220,17 @@ class TestnetMM:
 
             raise err
 
+    def _terminate_if_error(func):
+        def execute(self):
+            try:
+                return func(self)
+            except Exception as err:
+                self.terminate()
+                logger.update('debug', traceback.format_exc())
+                raise err
+
+        return execute
+
     def _prevent_multiple_trade_at_once(func):
         def execute(self):
             self.in_process = self.in_process if hasattr(self, "in_process") else False
@@ -234,6 +247,7 @@ class TestnetMM:
 
         return execute
 
+    @_terminate_if_error
     @_prevent_multiple_trade_at_once
     def _trade(self) -> bool:
         # don't trade if price is not updated
@@ -292,7 +306,7 @@ class TestnetMM:
             ws_base_url=f"{self.testnet_ws_base_url}/{self.listen_key}",
             topics=[],
             message_handler=self._message_handler,
-            close_handler=self._connect_to_testnet_user_stream)
+            close_handler=self._close_handler)
         bws.connect()
         return bws
 
@@ -322,4 +336,5 @@ class TestnetMM:
             logger.update('debug', f"Unhandled ws message: {msg}")
 
     def _close_handler(self):
-        print("Handling close WS conn")
+        self.terminate()
+        logger.info("Handling close WS conn")
