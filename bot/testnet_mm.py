@@ -23,7 +23,7 @@ class TestnetMM:
         testnet_rest_base_url="https://testnet.binance.vision",
         testnet_ws_base_url="wss://testnet.binance.vision/ws",
         production_ws_base_url="wss://stream.binance.com:9443/ws",
-        distance_from_mid_price="0.0003"
+        distance_from_mid_price="0.01"
     ):
         self.base_asset = base_asset.upper()
         self.quote_asset = quote_asset.upper()
