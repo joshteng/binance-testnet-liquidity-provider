@@ -1,0 +1,6 @@
+.git
+tests
+poetry.lock
+pyproject.toml
+*.pyc
+__pycache__

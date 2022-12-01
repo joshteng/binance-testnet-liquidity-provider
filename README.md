@@ -18,6 +18,7 @@ Sample output:
 ---
 
 ## Run the Bot
+### Directly
 1. Have Python v3.9.10 installed
 2. Install dependencies:
     ```sh
@@ -28,6 +29,14 @@ Sample output:
     ```sh
     API_KEY=<YOUR_APY_KEY> API_SECRET=<YOUR_APY_SECRET> python start.py
     ```
+### Using Docker
+1. Have Docker engine installed
+2. Then, at the root of this project:
+    ```sh
+    docker build -t binance-testnet-mm:latest .
+    docker run -e API_KEY=<YOUR_API_KEY> -e API_SECRET=<YOUR_SECRET_KEY> --name=binance-testnet-mm-container binance-testnet-mm
+    ```
+\* Terminal output when using Docker is not optimized. For a better console viewing experience, run the bot directly rather than using Docker
 
 ---
 
