@@ -37,7 +37,8 @@ class BinanceClient:
         "putUserDataStream": {
             "http_method": "PUT",
             "path": "/api/v3/userDataStream",
-            "is_signed": False
+            "is_signed": False,
+            "required_params": ["listenKey"]
         }
     }
 
@@ -97,6 +98,9 @@ class BinanceClient:
     def _prepare_querystring(self, endpoint, params):
         if self.endpoints[endpoint]["is_signed"]:
             return self._prepare_params(self._sign_request(params))
+        elif params:
+            return self._prepare_params(params)
+
         return ""
 
     def _check_response(self, endpoint, res):
