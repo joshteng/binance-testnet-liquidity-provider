@@ -5,3 +5,4 @@ generate_requirements.sh
 __pycache__
 .env
 testing.py
+.vscode
