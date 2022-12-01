@@ -1,4 +1,4 @@
-# A Sample Market Making for Binance Spot (TESTNET)
+# A Sample Market Making Bot for Binance Spot (TESTNET)
 
 This is an example of providing liquidity programmatically on Binance (Spot). It's the most basic form of market making, placing 1 limit order on each side of the order book - learn more about market making: https://www.youtube.com/watch?v=QqK6H1JPjv0
 
@@ -40,6 +40,19 @@ Sample output:
 
 ---
 
+## Settings
+The following are parameters you could set in `config.py`
+```py
+class Config:
+    API_KEY = os.getenv("API_KEY")
+    API_SECRET = os.getenv("API_SECRET")
+    BASE_ASSET = "BTC"
+    QUOTE_ASSET = "BUSD"
+    DISTANCE_FROM_MID_PRICE = "0.0003"
+```
+
+---
+
 ## Development and Testing
 1. Have Python v3.9.10 installed
 2. Install dependencies:
@@ -58,24 +71,23 @@ Sample output:
     ```sh
     API_KEY=<YOUR_APY_KEY> API_SECRET=<YOUR_APY_SECRET> python start.py
     ```
-
+5. Adding new dependencies
+    ```sh
+    poetry add <library>
+    ```
+    or
+    ```sh
+    poetry add --dev <library>
+    ```
+    finally
+    ```
+    poetry export -f requirements.txt --dev --output requirements.dev.txt
+    poetry export -f requirements.txt --output requirements.txt
+    ```
 ---
 
-## Configurations
-The following are parameters you could set in `config.py`
-```py
-class Config:
-    API_KEY = os.getenv("API_KEY")
-    API_SECRET = os.getenv("API_SECRET")
-    BASE_ASSET = "BTC"
-    QUOTE_ASSET = "BUSD"
-    DISTANCE_FROM_MID_PRICE = "0.0003"
-```
-
----
-
-### Disclaimer
+## Disclaimer
 1. This repository is intended for educational purpose, integrating Binance's REST and WS API without a SDK
-1. Risks of financial losses from the use of this bot lies solely on you
+1. Use at your own risks! Risks of financial losses from the use of this bot can occur
 1. Manage your API keys safely, even testnet! Never include it in your repository. Use and manage environment variables safely
 1. If you're reconfiguring this bot to run against Binance production, it's crucial to never have withdrawal permission enabled on your API credentials if not necessary
