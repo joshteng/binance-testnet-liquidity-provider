@@ -1,5 +1,6 @@
 from bot.logger import logger
 
+
 class TestnetMMState:
     PRODUCTION_LAST_PRICE = '0'
     PAST_ORDERS = []
@@ -30,5 +31,7 @@ class TestnetMMState:
                     order['executedQty'] = payload["z"]
                     order['status'] = payload["X"]
 
-            logger.update('info', f'Order {payload["i"]} updates: executedQty {payload["z"]}; status: {payload["X"]}')
+            logger.update(
+                'info',
+                f'Order {payload["i"]} updates: executedQty {payload["z"]}; status: {payload["X"]}')
             logger.update('open_orders', TestnetMMState.OPEN_ORDERS)

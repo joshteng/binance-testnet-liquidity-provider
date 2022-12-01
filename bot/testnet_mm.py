@@ -6,13 +6,13 @@ from datetime import datetime
 from lib.binance import BinanceWebsocketClient, BinanceClient
 from lib.binance.rest.exceptions import BinanceRestException
 from bot.testnet_mm_state import TestnetMMState
-from bot.exceptions import *
+from bot.exceptions import TestnetMMOrderFailedException, TestnetMMInsufficientFundsException
 from bot.logger import logger
 
 
 class TestnetMM:
     @staticmethod
-    def _record_last_price(price:str):
+    def _record_last_price(price: str):
         TestnetMMState.PRODUCTION_LAST_PRICE = price
 
     def __init__(
@@ -88,7 +88,7 @@ class TestnetMM:
 
         return (balances[base_asset], balances[quote_asset])
 
-    def _place_bid(self, qty:str, price:str):
+    def _place_bid(self, qty: str, price: str):
         res = self.rest_client.request("postOrder", {
             "symbol": self.symbol,
             "side": "BUY",
@@ -120,7 +120,7 @@ class TestnetMM:
         logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
         logger.update('info', f"Placed bid order for {res['symbol']} {res['origQty']} at {res['price']}")
 
-    def _place_ask(self, qty:str, price:str):
+    def _place_ask(self, qty: str, price: str):
         res = self.rest_client.request("postOrder", {
             "symbol": self.symbol,
             "side": "SELL",
@@ -152,21 +152,21 @@ class TestnetMM:
         logger.update('open_orders', TestnetMMState.OPEN_ORDERS)
         logger.update('info', f"Placed ask order for {res['symbol']} {res['origQty']} at {res['price']}")
 
-    def _truncate_quantity(self, quantity:Decimal) -> str:
+    def _truncate_quantity(self, quantity: Decimal) -> str:
         """
         Fix number of decimal places as per Binance filters
         """
         factor = 10 ** self.base_asset_precision[self.symbol]
         return '{:f}'.format(math.floor(quantity * factor) / factor)
 
-    def _truncate_price(self, price:Decimal) -> str:
+    def _truncate_price(self, price: Decimal) -> str:
         """
         Fix number of decimal places as per Binance filters
         """
         factor = 10 ** self.price_precision[self.symbol]
         return '{:f}'.format(math.floor(price * factor) / factor)
 
-    def _buy_base_asset(self, quote_asset_available:str):
+    def _buy_base_asset(self, quote_asset_available: str):
         """
         Buy base asset with quote asset
         Warning: Hardcoded a ratio of 1/2 base and 1/2 quote asset
@@ -256,8 +256,8 @@ class TestnetMM:
         if float(TestnetMMState.PRODUCTION_LAST_PRICE) <= 0:
             return False
 
-        if self._has_no_open_orders() or\
-            self._has_open_orders_and_production_price_reached():
+        if self._has_no_open_orders() or \
+           self._has_open_orders_and_production_price_reached():
             self._place_trade()
 
     def _has_no_open_orders(self):
@@ -301,7 +301,7 @@ class TestnetMM:
 
     def _keep_listen_key_alive(self):
         self.last_keep_listen_key_alive_at = datetime.now()
-        self.rest_client.request("putUserDataStream", { "listenKey": self.listen_key })
+        self.rest_client.request("putUserDataStream", {"listenKey": self.listen_key})
 
     def _connect_to_testnet_user_stream(self):
         self._get_listen_key()

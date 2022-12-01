@@ -1,7 +1,7 @@
 import hmac
 import hashlib
 import requests
-from lib.binance.rest.exceptions import *
+from lib.binance.rest.exceptions import BinanceMissingEndpointException, BinanceAPICredentialsException, BinanceMissingParameterException, BinanceRestException
 from lib.binance.rest.util import encoded_string, get_timestamp, clean_none_value
 
 
@@ -64,7 +64,7 @@ class BinanceClient:
         return m.hexdigest()
 
     def _dispatch_request(self, http_method, url_path, url_querystring):
-        headers= {
+        headers = {
             "Content-Type": "application/json;charset=utf-8",
             "X-MBX-APIKEY": self.key,
         }
@@ -80,7 +80,7 @@ class BinanceClient:
         )
 
     def _verify_endpoint(self, endpoint):
-        if not endpoint in self.endpoints:
+        if endpoint not in self.endpoints:
             raise BinanceMissingEndpointException(f"Endpoint {endpoint} not found")
 
     def _verify_api_credentials(self, endpoint):
@@ -88,11 +88,11 @@ class BinanceClient:
             raise BinanceAPICredentialsException("Missing API key or secret")
 
     def _verify_parameters(self, endpoint, params):
-        if not "required_params" in self.endpoints[endpoint]:
+        if "required_params" not in self.endpoints[endpoint]:
             return
 
         for key in self.endpoints[endpoint]['required_params']:
-            if not key in params:
+            if key not in params:
                 raise BinanceMissingParameterException(key)
 
     def _prepare_querystring(self, endpoint, params):

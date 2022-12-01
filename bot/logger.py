@@ -3,6 +3,7 @@ import os
 import sys
 from datetime import datetime
 
+
 class BotLogger(object):
     def __init__(self, log_file, log_level):
         self._create_logger(log_file, log_level)
@@ -47,7 +48,8 @@ class BotLogger(object):
         self.logger.info('')
 
         self.logger.info('-' * 50)
-        self.logger.info(f'LAST {self.number_of_log_history_to_keep} LOG MESSAGES')
+        self.logger.info(
+            f'LAST {self.number_of_log_history_to_keep} LOG MESSAGES')
         for msg in self.log_history['info']:
             self.logger.info(msg)
 
@@ -55,9 +57,9 @@ class BotLogger(object):
             self.logger.debug(msg)
         self.logger.info('')
 
-
         self.logger.info('-' * 50)
-        self.logger.info(f'LAST {self.number_of_log_history_to_keep} PAST ORDERS')
+        self.logger.info(
+            f'LAST {self.number_of_log_history_to_keep} PAST ORDERS')
         for order in self.log_history['past_orders']:
             self.logger.info(order)
 
@@ -69,13 +71,17 @@ class BotLogger(object):
         elif type == 'open_orders':
             self.log_history['open_orders'] = msg
         elif type == 'info' or type == 'debug':
-            self.log_history[type].append(f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')} - {msg}")
-            self.log_history[type] = self.log_history[type][-self.number_of_log_history_to_keep:]
+            self.log_history[type].append(
+                f"{datetime.now().strftime('%m/%d/%Y, %H:%M:%S')} - {msg}")
+            self.log_history[type] = \
+                self.log_history[type][-self.number_of_log_history_to_keep:]
         else:
             self.log_history[type].append(msg)
-            self.log_history[type] = self.log_history[type][-self.number_of_log_history_to_keep:]
+            self.log_history[type] = \
+                self.log_history[type][-self.number_of_log_history_to_keep:]
 
         if (datetime.now() - self.last_refreshed).seconds > self.seconds_between_log_refresh:
             self.construct_output()
+
 
 logger = BotLogger('TestnetMM', "INFO")
